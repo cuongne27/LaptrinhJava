@@ -45,7 +45,7 @@ public class VehicleServiceHistory {
     private User performedBy;
 
     @ManyToOne
-    @JoinColumn(name = "dealerID")
+    @JoinColumn(name = "dealer_id")
     private Dealer dealer;
 
     @Column(name = "created_at", nullable = false, updatable = false)
