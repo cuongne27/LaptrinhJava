@@ -11,3 +11,21 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
+server:
+  port: 8080
+  ssl:
+    enabled: false
+    key-store: classpath:keystore.p12
+    key-store-password: your_keystore_password
+    key-store-type: PKCS12
+    key-alias: tomcat
+
+app:
+  jwt:
+    secret: your_jwt_secret_key_min_32_chars_for_hs256_algorithm
+    expiration-ms: 86400000  # 24 giờ
+    issuer: Evm
+
+logging:
+  level:
+    org.springframework.security: DEBUG

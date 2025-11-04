@@ -27,7 +27,7 @@ public class Role {
     private String displayName;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role_type")
+    @Column(name = "role_type", length = 30)
     private RoleType roleType;
 
     @Column(name = "description", columnDefinition = "TEXT")
