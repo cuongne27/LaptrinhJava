@@ -79,7 +79,7 @@ public class SecurityConfiguration {
                                         .requestMatchers("/api/auth/login").permitAll()
 
                                         // CHỈ ADMIN MỚI ĐƯỢC DÙNG CHỨC NĂNG ĐĂNG KÝ
-                                        .requestMatchers("/api/auth/signup").hasRole("ADMIN")
+                                        .requestMatchers("/api/auth/sign-up").hasRole("ADMIN")
 
                                         // ... (các đường dẫn khác)
                                         .anyRequest().authenticated()

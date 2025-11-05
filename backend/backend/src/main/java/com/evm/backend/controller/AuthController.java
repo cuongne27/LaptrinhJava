@@ -14,7 +14,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -80,7 +79,6 @@ public class AuthController {
     }
 
     //ĐĂNG KÝ TÀI KHOẢN
-//    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping("/sign-up")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
         // Kiểm tra username đã tồn tại chưa
@@ -99,7 +97,6 @@ public class AuthController {
         user.setFullName(signUpRequest.getFullName());
         user.setEmail(signUpRequest.getEmail());
         user.setPasswordHash(encoder.encode(signUpRequest.getPassword()));
-        // Thêm thời gian tạo tài khoản
         user.setDateJoined(java.time.OffsetDateTime.now());
         user.setIsActive(true); // Mặc định là Active
 

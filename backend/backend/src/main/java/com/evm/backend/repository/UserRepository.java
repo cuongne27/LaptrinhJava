@@ -43,6 +43,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.fullName LIKE %:keyword% OR u.username LIKE %:keyword%")
     List<User> searchByKeyword(@Param("keyword") String keyword);
 
+    @Query("SELECT u FROM User u " +
+            "LEFT JOIN FETCH u.role " +
+            "LEFT JOIN FETCH u.dealer " +
+            "LEFT JOIN FETCH u.brand " +
+            "WHERE u.username = :username")
+    Optional<User> findByUsernameWithDetails(@Param("username") String username);
+
     long countByDealerId(Long dealerId);
 
     long countByIsActive(Boolean isActive);
