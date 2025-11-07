@@ -5,6 +5,7 @@ import com.evm.backend.dto.request.ProductRequest;
 import com.evm.backend.dto.response.ProductDetailResponse;
 import com.evm.backend.dto.response.ProductListResponse;
 import org.springframework.data.domain.Page;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service interface for Product operations
@@ -32,4 +33,12 @@ public interface ProductService {
 
     ProductDetailResponse createProduct(ProductRequest productRequest);
 
+    @Transactional
+    ProductDetailResponse updateProduct(Long productId, ProductRequest productRequest);
+
+    @Transactional
+    void deleteProduct(Long productId);
+
+    @Transactional
+    void hardDeleteProduct(Long productId);
 }

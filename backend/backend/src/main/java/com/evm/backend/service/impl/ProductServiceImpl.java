@@ -158,6 +158,126 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
+     * UPDATE - Cập nhật sản phẩm
+     */
+    @Transactional
+    @Override
+    public ProductDetailResponse updateProduct(Long productId, ProductRequest productRequest) {
+        log.info("Updating product id: {}, name: {}", productId, productRequest.getProductName());
+
+        // Tìm product hiện tại
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Product not found with id: " + productId));
+
+        // Validate brand existence
+        Brand brand = brandRepository.findById(productRequest.getBrandId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Brand not found with id: " + productRequest.getBrandId()));
+
+        // Update basic fields
+        product.setProductName(productRequest.getProductName());
+        product.setVersion(productRequest.getVersion());
+        product.setMsrp(productRequest.getMsrp());
+        product.setDescription(productRequest.getDescription());
+        product.setImageUrl(productRequest.getImageUrl());
+        product.setVideoUrl(productRequest.getVideoUrl());
+        product.setBrand(brand);
+        product.setIsActive(productRequest.getIsActive() != null ? productRequest.getIsActive() : true);
+
+        // Update TechnicalSpecs (Embeddable)
+        if (productRequest.getTechnicalSpecs() != null) {
+            TechnicalSpecs technicalSpecs = TechnicalSpecs.builder()
+                    .batteryCapacity(productRequest.getTechnicalSpecs().getBatteryCapacity())
+                    .productRange(productRequest.getTechnicalSpecs().getProductRange())
+                    .power(productRequest.getTechnicalSpecs().getPower())
+                    .maxSpeed(productRequest.getTechnicalSpecs().getMaxSpeed())
+                    .chargingTime(productRequest.getTechnicalSpecs().getChargingTime())
+                    .dimensions(productRequest.getTechnicalSpecs().getDimensions())
+                    .weight(productRequest.getTechnicalSpecs().getWeight())
+                    .seatingCapacity(productRequest.getTechnicalSpecs().getSeatingCapacity())
+                    .build();
+            product.setTechnicalSpecs(technicalSpecs);
+        }
+
+        // Update Features: Clear và rebuild
+        product.getFeatures().clear();
+        if (productRequest.getFeatures() != null && !productRequest.getFeatures().isEmpty()) {
+            List<ProductFeature> newFeatures = productRequest.getFeatures().stream()
+                    .map(featureRequest -> ProductFeature.builder()
+                            .featureName(featureRequest.getFeatureName())
+                            .description(featureRequest.getDescription())
+                            .iconUrl(featureRequest.getIconUrl())
+                            .product(product)
+                            .build())
+                    .collect(Collectors.toList());
+            product.getFeatures().addAll(newFeatures);
+        }
+
+        // Update Variants: Clear và rebuild
+        product.getVariants().clear();
+        if (productRequest.getVariants() != null && !productRequest.getVariants().isEmpty()) {
+            List<ProductVariant> newVariants = productRequest.getVariants().stream()
+                    .map(variantRequest -> ProductVariant.builder()
+                            .color(variantRequest.getColor())
+                            .colorCode(variantRequest.getColorCode())
+                            .availableQuantity(variantRequest.getAvailableQuantity() != null
+                                    ? variantRequest.getAvailableQuantity() : 0L)
+                            .product(product)
+                            .build())
+                    .collect(Collectors.toList());
+            product.getVariants().addAll(newVariants);
+        }
+
+        // Save product (cascade sẽ update features và variants)
+        Product updatedProduct = productRepository.save(product);
+
+        log.info("Product updated successfully with id: {}", updatedProduct.getId());
+
+        // Convert và return response
+        return convertToDetailResponse(updatedProduct);
+    }
+
+    /**
+     * SOFT DELETE - Đặt isActive = false
+     */
+    @Transactional
+    @Override
+    public void deleteProduct(Long productId) {
+        log.info("Soft deleting product id: {}", productId);
+
+        // Tìm product
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Product not found with id: " + productId));
+
+        // Set isActive = false
+        product.setIsActive(false);
+        productRepository.save(product);
+
+        log.info("Product soft deleted successfully: {}", productId);
+    }
+
+    /**
+     * HARD DELETE - Xóa vĩnh viễn khỏi database
+     */
+    @Transactional
+    @Override
+    public void hardDeleteProduct(Long productId) {
+        log.info("Hard deleting product id: {}", productId);
+
+        // Check if product exists
+        if (!productRepository.existsById(productId)) {
+            throw new ResourceNotFoundException("Product not found with id: " + productId);
+        }
+
+        // Delete product (cascade sẽ xóa features và variants)
+        productRepository.deleteById(productId);
+
+        log.info("Product hard deleted successfully: {}", productId);
+    }
+
+    /**
      * Get user with dealer validation
      */
     private User getUserWithDealer(String username) {

@@ -1,7 +1,6 @@
 package com.evm.backend.controller;
 
 import com.evm.backend.dto.request.ProductFilterRequest;
-import com.evm.backend.dto.request.ProductRequest;
 import com.evm.backend.dto.response.ProductDetailResponse;
 import com.evm.backend.dto.response.ProductListResponse;
 import com.evm.backend.service.ProductService;
@@ -9,76 +8,75 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 
 /**
- * REST Controller cho Product Management
+ * Controller for Product Catalog operations
  * UC-DL-01: Xem danh mục và thông tin chi tiết xe
  */
 @RestController
-@RequestMapping("/api/products")
+@RequestMapping("/api/dealer/products")
 @RequiredArgsConstructor
-@Slf4j
-@Tag(name = "Product Management", description = "APIs quản lý sản phẩm xe điện")
+@Tag(name = "Dealer Product Catalog", description = "APIs for dealer staff to view product catalog")
+@SecurityRequirement(name = "bearerAuth")
 public class ProductController {
 
     private final ProductService productService;
 
     /**
-     * GET: Lấy danh sách sản phẩm với filter và phân trang
-     * Endpoint: GET /api/products
+     * UC-DL-01: Xem danh mục xe với filter và search
+     * GET /api/dealer/products
      */
     @GetMapping
+    @PreAuthorize("hasAnyRole('DEALER_STAFF', 'ADMIN')")
     @Operation(
-            summary = "Lấy danh sách sản phẩm",
-            description = "Lấy danh sách sản phẩm có sẵn tại dealer với filter và phân trang"
+            summary = "Get product catalog",
+            description = "View all available electric vehicles with filtering and search capabilities"
     )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công"),
-            @ApiResponse(responseCode = "401", description = "Chưa đăng nhập"),
-            @ApiResponse(responseCode = "403", description = "Không có quyền truy cập")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved product catalog"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - User does not have DEALER_STAFF or ADMIN role"),
+            @ApiResponse(responseCode = "400", description = "Bad request - User not associated with dealer")
     })
     public ResponseEntity<Page<ProductListResponse>> getProductCatalog(
             Authentication authentication,
-            @Parameter(description = "Brand ID để filter")
+
+            @Parameter(description = "Search keyword for product name")
+            @RequestParam(required = false) String search,
+
+            @Parameter(description = "Filter by brand ID")
             @RequestParam(required = false) Long brandId,
 
-            @Parameter(description = "Từ khóa tìm kiếm (tên sản phẩm)")
-            @RequestParam(required = false) String searchKeyword,
-
-            @Parameter(description = "Giá tối thiểu")
+            @Parameter(description = "Minimum price")
             @RequestParam(required = false) BigDecimal minPrice,
 
-            @Parameter(description = "Giá tối đa")
+            @Parameter(description = "Maximum price")
             @RequestParam(required = false) BigDecimal maxPrice,
 
-            @Parameter(description = "Sắp xếp: price_asc, price_desc, name_asc, name_desc")
-            @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Sort by: price_asc, price_desc, name_asc, name_desc")
+            @RequestParam(required = false, defaultValue = "name_asc") String sortBy,
 
-            @Parameter(description = "Số trang (bắt đầu từ 0)")
-            @RequestParam(defaultValue = "0") Integer page,
+            @Parameter(description = "Page number (0-indexed)")
+            @RequestParam(required = false, defaultValue = "0") Integer page,
 
-            @Parameter(description = "Số lượng items mỗi trang (max 100)")
-            @RequestParam(defaultValue = "20") Integer size
+            @Parameter(description = "Page size (max 100)")
+            @RequestParam(required = false, defaultValue = "20") Integer size
     ) {
-        log.info("GET /api/products - User: {}, Filters: brandId={}, search={}, minPrice={}, maxPrice={}",
-                getUsername(authentication), brandId, searchKeyword, minPrice, maxPrice);
+        String username = authentication.getName();
 
         ProductFilterRequest filterRequest = ProductFilterRequest.builder()
+                .searchKeyword(search)
                 .brandId(brandId)
-                .searchKeyword(searchKeyword)
                 .minPrice(minPrice)
                 .maxPrice(maxPrice)
                 .sortBy(sortBy)
@@ -86,10 +84,7 @@ public class ProductController {
                 .size(size)
                 .build();
 
-        Page<ProductListResponse> products = productService.getProductCatalog(
-                getUsername(authentication),
-                filterRequest
-        );
+        Page<ProductListResponse> products = productService.getProductCatalog(username, filterRequest);
 
         return ResponseEntity.ok(products);
     }
@@ -99,6 +94,7 @@ public class ProductController {
      * GET /api/dealer/products/{productId}
      */
     @GetMapping("/{productId}")
+    @PreAuthorize("hasAnyRole('DEALER_STAFF', 'ADMIN')")
     @Operation(
             summary = "Get product details",
             description = "View detailed information about a specific electric vehicle including specs, features, and available variants"
@@ -106,7 +102,7 @@ public class ProductController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved product details"),
             @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - User does not have DEALER_STAFF role"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - User does not have DEALER_STAFF or ADMIN role"),
             @ApiResponse(responseCode = "404", description = "Not found - Product does not exist"),
             @ApiResponse(responseCode = "400", description = "Bad request - User not associated with dealer")
     })
@@ -124,46 +120,31 @@ public class ProductController {
     }
 
     /**
-     * POST: Tạo sản phẩm mới
-     * Endpoint: POST /api/products
+     * Alternative endpoint: Search products using POST method
+     * POST /api/dealer/products/search
      */
-    @PostMapping
+    @PostMapping("/search")
+    @PreAuthorize("hasAnyRole('DEALER_STAFF', 'ADMIN')")
     @Operation(
-            summary = "Tạo sản phẩm mới",
-            description = "Tạo một sản phẩm mới với thông tin chi tiết, thông số kỹ thuật, tính năng và variants"
+            summary = "Search products",
+            description = "Search and filter products using POST method with request body"
     )
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Tạo sản phẩm thành công"),
-            @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ"),
-            @ApiResponse(responseCode = "404", description = "Brand không tồn tại"),
-            @ApiResponse(responseCode = "401", description = "Chưa đăng nhập"),
-            @ApiResponse(responseCode = "403", description = "Không có quyền tạo sản phẩm")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved product catalog"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - User does not have DEALER_STAFF or ADMIN role"),
+            @ApiResponse(responseCode = "400", description = "Bad request - Invalid filter parameters or user not associated with dealer")
     })
-    public ResponseEntity<ProductDetailResponse> createProduct(
+    public ResponseEntity<Page<ProductListResponse>> searchProducts(
             Authentication authentication,
-            @Parameter(description = "Thông tin sản phẩm cần tạo", required = true)
-            @Valid @RequestBody ProductRequest productRequest
+
+            @Parameter(description = "Filter request body", required = true)
+            @RequestBody ProductFilterRequest filterRequest
     ) {
-        log.info("POST /api/products - User: {}, Product: {}",
-                getUsername(authentication), productRequest.getProductName());
+        String username = authentication.getName();
 
-        ProductDetailResponse createdProduct = productService.createProduct(productRequest);
+        Page<ProductListResponse> products = productService.getProductCatalog(username, filterRequest);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
-    }
-
-    /**
-     * Helper method: Lấy username từ Authentication
-     */
-    private String getUsername(Authentication authentication) {
-        if (authentication == null || authentication.getPrincipal() == null) {
-            throw new IllegalStateException("User not authenticated");
-        }
-
-        if (authentication.getPrincipal() instanceof UserDetails) {
-            return ((UserDetails) authentication.getPrincipal()).getUsername();
-        }
-
-        return authentication.getPrincipal().toString();
+        return ResponseEntity.ok(products);
     }
 }
