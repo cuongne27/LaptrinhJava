@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
  * Chỉ BRAND_MANAGER có quyền thực hiện CRUD
  */
 @RestController
-@RequestMapping("/api/brand/products")
+@RequestMapping("/api/products")
 @RequiredArgsConstructor
 @Tag(name = "Brand Product Management", description = "APIs for managing products (CRUD)")
 @SecurityRequirement(name = "bearerAuth")

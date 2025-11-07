@@ -6,49 +6,59 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface BrandRepository extends JpaRepository<Brand, Integer> {
-    // ========== Find by Unique Fields ==========
 
+    /**
+     * Tìm brand theo tên
+     */
     Optional<Brand> findByBrandName(String brandName);
 
-    Optional<Brand> findByTaxCode(String taxCode);
-
-    // ========== Existence Checks ==========
-
+    /**
+     * Check brand name có tồn tại không
+     */
     boolean existsByBrandName(String brandName);
 
+    /**
+     * Check brand name có tồn tại không (exclude current brand khi update)
+     */
+    @Query("SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END FROM Brand b " +
+            "WHERE b.brandName = :brandName AND b.id <> :excludeId")
+    boolean existsByBrandNameAndIdNot(@Param("brandName") String brandName, @Param("excludeId") Integer excludeId);
+
+    /**
+     * Tìm brand theo tax code
+     */
+    Optional<Brand> findByTaxCode(String taxCode);
+
+    /**
+     * Check tax code có tồn tại không
+     */
     boolean existsByTaxCode(String taxCode);
 
-    // ========== Search ==========
+    /**
+     * Đếm số dealers của brand
+     */
+    @Query("SELECT COUNT(d) FROM Dealer d WHERE d.brand.id = :brandId")
+    Long countDealersByBrandId(@Param("brandId") Integer brandId);
 
-    List<Brand> findByBrandNameContainingIgnoreCase(String keyword);
+    /**
+     * Đếm số products của brand
+     */
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.brand.id = :brandId")
+    Long countProductsByBrandId(@Param("brandId") Integer brandId);
 
-    @Query("SELECT b FROM Brand b WHERE b.brandName LIKE %:keyword% OR b.contactInfo LIKE %:keyword%")
-    List<Brand> searchBrands(@Param("keyword") String keyword);
+    /**
+     * Đếm số users của brand
+     */
+    @Query("SELECT COUNT(u) FROM User u WHERE u.brand.id = :brandId")
+    Long countUsersByBrandId(@Param("brandId") Integer brandId);
 
-    // ========== Find by Location ==========
-
-    @Query("SELECT b FROM Brand b WHERE b.headquartersAddress LIKE %:city%")
-    List<Brand> findByHeadquartersCity(@Param("city") String city);
-
-    // ========== Statistics ==========
-
-    @Query("SELECT COUNT(b) FROM Brand b")
-    long countAllBrands();
-
-    // ========== With Relationships Count ==========
-
-    @Query("SELECT b FROM Brand b LEFT JOIN FETCH b.dealers WHERE b.id = :id")
-    Optional<Brand> findByIdWithDealers(@Param("id") Integer id);
-
-    @Query("SELECT b FROM Brand b LEFT JOIN FETCH b.products WHERE b.id = :id")
-    Optional<Brand> findByIdWithProducts(@Param("id") Integer id);
-
-    @Query("SELECT b FROM Brand b LEFT JOIN FETCH b.dealerContracts WHERE b.id = :id")
-    Optional<Brand> findByIdWithContracts(@Param("id") Integer id);
-
+    /**
+     * Đếm số contracts của brand
+     */
+    @Query("SELECT COUNT(c) FROM DealerContract c WHERE c.brand.id = :brandId")
+    Long countContractsByBrandId(@Param("brandId") Integer brandId);
 }
