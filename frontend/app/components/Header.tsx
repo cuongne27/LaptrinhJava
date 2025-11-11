@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import Container from './Container';
 
 export default function Header() {
@@ -7,18 +8,14 @@ export default function Header() {
       {/* Top Bar */}
       <Container>
         <div className="flex items-center justify-between py-4">
-          {/* Left: Logo */}
-          <div className="flex items-center gap-2">
-            <img 
-              src="/teslo-logo.svg" 
-              alt="TESLO Logo" 
-              className="h-8 w-auto"
-            />
-            <img 
-              src="/teslo.svg" 
-              alt="TESLO" 
-              className="h-6 w-auto"
-            />
+          <div className="flex items-center">
+            <Link href="/" aria-label="Về trang chủ">
+              <img
+                src="/teslo.svg"
+                alt="TESLO"
+                className="h-10 w-auto block -ml-6 cursor-pointer"
+              />
+            </Link>
           </div>
 
           {/* Center: Search Bar */}
@@ -95,9 +92,9 @@ export default function Header() {
         <Container>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <a href="#" className="text-white font-sans hover:text-gray-200 transition">
+              <Link href="/" className="text-white font-sans hover:text-gray-200 transition">
                 TRANG CHỦ
-              </a>
+              </Link>
               <a href="#" className="text-white font-sans hover:text-gray-200 transition">
                 XE ĐIỆN TESLO
               </a>
