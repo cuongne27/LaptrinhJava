@@ -1,6 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import Container from './Container';
+import searchIcon from '@/public/search-icon.svg';
 
 export default function Header() {
   return (
@@ -9,80 +11,65 @@ export default function Header() {
       <Container>
         <div className="flex items-center justify-between py-4">
           <div className="flex items-center">
-            <Link href="/" aria-label="Về trang chủ">
-              <img
+            <Link href="/" aria-label="Về trang chủ" className="block">
+              <Image
                 src="/teslo.svg"
                 alt="TESLO"
-                className="h-10 w-auto block -ml-6 cursor-pointer"
+                width={120}
+                height={40}
+                className="h-10 w-auto"
+                priority
               />
             </Link>
           </div>
 
           {/* Center: Search Bar */}
-          <div className="flex-1 max-w-md mx-8">
+          <div className="mx-[75px] flex-1">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search..."
-                className="w-full bg-gray-200 rounded py-2 px-4 pl-10 pr-10 text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-full bg-gray-300/80 py-3 text-base text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white pl-[75px] pr-[75px]"
               />
-              <svg
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+              <Image
+                src={searchIcon}
+                alt="Search"
+                width={20}
+                height={20}
+                className="absolute right-[28px] top-1/2 h-5 w-5 -translate-y-1/2 transform"
+              />
             </div>
           </div>
 
           {/* Right: Icons */}
-          <div className="flex items-center gap-4">
-            <svg
-              className="w-6 h-6 text-gray-700 cursor-pointer"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+          <div className="flex items-center gap-[70px]">
+            <button type="button" aria-label="Liên hệ" className="h-6 w-6">
+              <Image
+                src="/phone-icon.svg"
+                alt="Liên hệ"
+                width={24}
+                height={24}
+                className="h-6 w-6 cursor-pointer"
               />
-            </svg>
-            <svg
-              className="w-6 h-6 text-gray-700 cursor-pointer"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            </button>
+            <button type="button" aria-label="Thông báo" className="h-6 w-6">
+              <Image
+                src="/noti-icon.svg"
+                alt="Thông báo"
+                width={24}
+                height={24}
+                className="h-6 w-6 cursor-pointer"
               />
-            </svg>
-            <svg
-              className="w-6 h-6 text-gray-700 cursor-pointer"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+            </button>
+            <button type="button" aria-label="Tài khoản" className="h-6 w-6">
+              <Image
+                src="/user-icon.svg"
+                alt="Tài khoản"
+                width={24}
+                height={24}
+                className="h-6 w-6 cursor-pointer"
               />
-            </svg>
+            </button>
           </div>
         </div>
       </Container>
@@ -99,9 +86,6 @@ export default function Header() {
                 XE ĐIỆN TESLO
               </a>
             </div>
-            <a href="#" className="text-white font-sans hover:text-gray-200 transition">
-              HỖ TRỢ
-            </a>
           </div>
         </Container>
       </nav>
