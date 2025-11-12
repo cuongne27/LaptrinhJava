@@ -1,6 +1,8 @@
 package com.evm.backend.repository;
 
-import com.evm.backend.entity.*;
+import com.evm.backend.entity.Appointment;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,151 +13,116 @@ import java.util.List;
 
 @Repository
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
-    // ========== Find by Relationships ==========
 
-    List<Appointment> findByCustomer(Customer customer);
-
+    /**
+     * Tìm tất cả appointments của customer
+     */
     List<Appointment> findByCustomerId(Long customerId);
 
-    List<Appointment> findByStaffUser(User staffUser);
-
+    /**
+     * Tìm tất cả appointments của staff
+     */
     List<Appointment> findByStaffUserId(Long staffUserId);
 
-    List<Appointment> findByDealer(Dealer dealer);
-
+    /**
+     * Tìm tất cả appointments của dealer
+     */
     List<Appointment> findByDealerId(Long dealerId);
 
-    List<Appointment> findByProduct(Product product);
-
+    /**
+     * Tìm tất cả appointments của product
+     */
     List<Appointment> findByProductId(Long productId);
 
-    // ========== Find by Status ==========
+    /**
+     * Tìm appointments với filter
+     */
+    @Query("SELECT a FROM Appointment a WHERE " +
+            "(:customerId IS NULL OR a.customer.id = :customerId) AND " +
+            "(:staffUserId IS NULL OR a.staffUser.id = :staffUserId) AND " +
+            "(:productId IS NULL OR a.product.id = :productId) AND " +
+            "(:dealerId IS NULL OR a.dealer.id = :dealerId) AND " +
+            "(:status IS NULL OR a.status = :status) AND " +
+            "(:fromDate IS NULL OR a.appointmentTime >= :fromDate) AND " +
+            "(:toDate IS NULL OR a.appointmentTime <= :toDate)")
+    Page<Appointment> findAppointmentsWithFilters(
+            @Param("customerId") Long customerId,
+            @Param("staffUserId") Long staffUserId,
+            @Param("productId") Long productId,
+            @Param("dealerId") Long dealerId,
+            @Param("status") String status,
+            @Param("fromDate") OffsetDateTime fromDate,
+            @Param("toDate") OffsetDateTime toDate,
+            Pageable pageable
+    );
 
-    List<Appointment> findByStatus(String status);
+    /**
+     * Tìm upcoming appointments (chưa đến giờ hẹn)
+     */
+    @Query("SELECT a FROM Appointment a WHERE " +
+            "a.appointmentTime > :currentTime AND " +
+            "a.status NOT IN ('CANCELLED', 'COMPLETED', 'NO_SHOW')")
+    List<Appointment> findUpcomingAppointments(
+            @Param("currentTime") OffsetDateTime currentTime
+    );
 
-    List<Appointment> findByStatusOrderByAppointmentTimeAsc(String status);
+    /**
+     * Tìm appointments hôm nay
+     */
+    @Query("SELECT a FROM Appointment a WHERE " +
+            "a.appointmentTime >= :startOfDay AND " +
+            "a.appointmentTime < :endOfDay")
+    List<Appointment> findAppointmentsToday(
+            @Param("startOfDay") OffsetDateTime startOfDay,
+            @Param("endOfDay") OffsetDateTime endOfDay
+    );
 
-    @Query("SELECT a FROM Appointment a WHERE a.dealer.id = :dealerId AND a.status = :status ORDER BY a.appointmentTime ASC")
-    List<Appointment> findByDealerAndStatus(@Param("dealerId") Long dealerId,
-                                            @Param("status") String status);
+    /**
+     * Tìm appointments của staff trong khoảng thời gian
+     */
+    @Query("SELECT a FROM Appointment a WHERE " +
+            "a.staffUser.id = :staffUserId AND " +
+            "a.appointmentTime BETWEEN :startTime AND :endTime AND " +
+            "a.status NOT IN ('CANCELLED', 'NO_SHOW')")
+    List<Appointment> findStaffAppointmentsInTimeRange(
+            @Param("staffUserId") Long staffUserId,
+            @Param("startTime") OffsetDateTime startTime,
+            @Param("endTime") OffsetDateTime endTime
+    );
 
-    // ========== Find by Time Range ==========
+    /**
+     * Check xem staff có available trong khoảng thời gian không
+     */
+    @Query("SELECT CASE WHEN COUNT(a) > 0 THEN false ELSE true END FROM Appointment a WHERE " +
+            "a.staffUser.id = :staffUserId AND " +
+            "a.appointmentTime BETWEEN :startTime AND :endTime AND " +
+            "a.status NOT IN ('CANCELLED', 'NO_SHOW')")
+    boolean isStaffAvailable(
+            @Param("staffUserId") Long staffUserId,
+            @Param("startTime") OffsetDateTime startTime,
+            @Param("endTime") OffsetDateTime endTime
+    );
 
-    @Query("SELECT a FROM Appointment a WHERE a.appointmentTime BETWEEN :startTime AND :endTime ORDER BY a.appointmentTime ASC")
-    List<Appointment> findByTimeRange(@Param("startTime") OffsetDateTime startTime,
-                                      @Param("endTime") OffsetDateTime endTime);
+    /**
+     * Đếm appointments theo status
+     */
+    @Query("SELECT COUNT(a) FROM Appointment a WHERE " +
+            "a.status = :status AND " +
+            "(:dealerId IS NULL OR a.dealer.id = :dealerId)")
+    Long countByStatus(
+            @Param("status") String status,
+            @Param("dealerId") Long dealerId
+    );
 
-    @Query("SELECT a FROM Appointment a WHERE a.dealer.id = :dealerId AND a.appointmentTime BETWEEN :startTime AND :endTime ORDER BY a.appointmentTime ASC")
-    List<Appointment> findByDealerAndTimeRange(@Param("dealerId") Long dealerId,
-                                               @Param("startTime") OffsetDateTime startTime,
-                                               @Param("endTime") OffsetDateTime endTime);
-
-    @Query("SELECT a FROM Appointment a WHERE a.staffUser.id = :staffUserId AND a.appointmentTime BETWEEN :startTime AND :endTime ORDER BY a.appointmentTime ASC")
-    List<Appointment> findByStaffUserAndTimeRange(@Param("staffUserId") Long staffUserId,
-                                                  @Param("startTime") OffsetDateTime startTime,
-                                                  @Param("endTime") OffsetDateTime endTime);
-
-    // ========== Upcoming Appointments ==========
-
-    @Query("SELECT a FROM Appointment a WHERE a.appointmentTime >= :currentTime AND a.status = :status ORDER BY a.appointmentTime ASC")
-    List<Appointment> findUpcomingAppointments(@Param("currentTime") OffsetDateTime currentTime,
-                                               @Param("status") String status);
-
-    @Query("SELECT a FROM Appointment a WHERE a.staffUser.id = :staffUserId AND a.appointmentTime >= :currentTime AND a.status = :status ORDER BY a.appointmentTime ASC")
-    List<Appointment> findUpcomingAppointmentsByStaff(@Param("staffUserId") Long staffUserId,
-                                                      @Param("currentTime") OffsetDateTime currentTime,
-                                                      @Param("status") String status);
-
-    @Query("SELECT a FROM Appointment a WHERE a.dealer.id = :dealerId AND a.appointmentTime >= :currentTime AND a.status = :status ORDER BY a.appointmentTime ASC")
-    List<Appointment> findUpcomingAppointmentsByDealer(@Param("dealerId") Long dealerId,
-                                                       @Param("currentTime") OffsetDateTime currentTime,
-                                                       @Param("status") String status);
-
-    @Query("SELECT a FROM Appointment a WHERE a.customer.id = :customerId AND a.appointmentTime >= :currentTime ORDER BY a.appointmentTime ASC")
-    List<Appointment> findUpcomingAppointmentsByCustomer(@Param("customerId") Long customerId,
-                                                         @Param("currentTime") OffsetDateTime currentTime);
-
-    // ========== Today's Appointments ==========
-
-    @Query("SELECT a FROM Appointment a WHERE DATE(a.appointmentTime) = CURRENT_DATE AND a.dealer.id = :dealerId ORDER BY a.appointmentTime ASC")
-    List<Appointment> findTodayAppointmentsByDealer(@Param("dealerId") Long dealerId);
-
-    @Query("SELECT a FROM Appointment a WHERE DATE(a.appointmentTime) = CURRENT_DATE AND a.staffUser.id = :staffUserId ORDER BY a.appointmentTime ASC")
-    List<Appointment> findTodayAppointmentsByStaff(@Param("staffUserId") Long staffUserId);
-
-    // ========== Past/Overdue Appointments ==========
-
-    @Query("SELECT a FROM Appointment a WHERE a.appointmentTime < :currentTime AND a.status = 'SCHEDULED' ORDER BY a.appointmentTime DESC")
-    List<Appointment> findOverdueAppointments(@Param("currentTime") OffsetDateTime currentTime);
-
-    @Query("SELECT a FROM Appointment a WHERE a.appointmentTime < :currentTime AND a.status = 'COMPLETED' ORDER BY a.appointmentTime DESC")
-    List<Appointment> findCompletedAppointments(@Param("currentTime") OffsetDateTime currentTime);
-
-    // ========== Unassigned Appointments ==========
-
-    @Query("SELECT a FROM Appointment a WHERE a.staffUser IS NULL AND a.status = 'SCHEDULED' ORDER BY a.appointmentTime ASC")
-    List<Appointment> findUnassignedAppointments();
-
-    @Query("SELECT a FROM Appointment a WHERE a.dealer.id = :dealerId AND a.staffUser IS NULL AND a.status = 'SCHEDULED' ORDER BY a.appointmentTime ASC")
-    List<Appointment> findUnassignedAppointmentsByDealer(@Param("dealerId") Long dealerId);
-
-    // ========== Product Test Drive Appointments ==========
-
-    @Query("SELECT a FROM Appointment a WHERE a.product.id = :productId AND a.status = :status ORDER BY a.appointmentTime DESC")
-    List<Appointment> findTestDrivesByProduct(@Param("productId") Long productId,
-                                              @Param("status") String status);
-
-    @Query("SELECT a FROM Appointment a WHERE a.product.id = :productId AND a.appointmentTime BETWEEN :startTime AND :endTime")
-    List<Appointment> findTestDrivesByProductAndTimeRange(@Param("productId") Long productId,
-                                                          @Param("startTime") OffsetDateTime startTime,
-                                                          @Param("endTime") OffsetDateTime endTime);
-
-    // ========== Check Availability ==========
-
-    @Query("SELECT a FROM Appointment a WHERE a.staffUser.id = :staffUserId AND a.appointmentTime BETWEEN :startTime AND :endTime AND a.status != 'CANCELLED'")
-    List<Appointment> findConflictingAppointments(@Param("staffUserId") Long staffUserId,
-                                                  @Param("startTime") OffsetDateTime startTime,
-                                                  @Param("endTime") OffsetDateTime endTime);
-
-    @Query("SELECT a FROM Appointment a WHERE a.product.id = :productId AND a.appointmentTime BETWEEN :startTime AND :endTime AND a.status = 'SCHEDULED'")
-    List<Appointment> findProductBookingConflicts(@Param("productId") Long productId,
-                                                  @Param("startTime") OffsetDateTime startTime,
-                                                  @Param("endTime") OffsetDateTime endTime);
-
-    // ========== Statistics & Counts ==========
-
-    long countByDealerId(Long dealerId);
-
-    long countByDealerIdAndStatus(Long dealerId, String status);
-
-    long countByStaffUserId(Long staffUserId);
-
-    long countByCustomerId(Long customerId);
-
-    @Query("SELECT COUNT(a) FROM Appointment a WHERE DATE(a.appointmentTime) = CURRENT_DATE AND a.dealer.id = :dealerId")
-    long countTodayAppointmentsByDealer(@Param("dealerId") Long dealerId);
-
-    @Query("SELECT COUNT(a) FROM Appointment a WHERE a.appointmentTime >= :currentTime AND a.status = 'SCHEDULED'")
-    long countUpcomingAppointments(@Param("currentTime") OffsetDateTime currentTime);
-
-    @Query("SELECT COUNT(a) FROM Appointment a WHERE a.appointmentTime < :currentTime AND a.status = 'SCHEDULED'")
-    long countOverdueAppointments(@Param("currentTime") OffsetDateTime currentTime);
-
-    // ========== Weekly/Monthly Reports ==========
-
-    @Query("SELECT DATE(a.appointmentTime) as date, COUNT(a) as count FROM Appointment a WHERE a.dealer.id = :dealerId AND a.appointmentTime BETWEEN :startDate AND :endDate GROUP BY DATE(a.appointmentTime) ORDER BY date")
-    List<Object[]> getAppointmentStatsByDealer(@Param("dealerId") Long dealerId,
-                                               @Param("startDate") OffsetDateTime startDate,
-                                               @Param("endDate") OffsetDateTime endDate);
-
-    @Query("SELECT a.status, COUNT(a) FROM Appointment a WHERE a.dealer.id = :dealerId GROUP BY a.status")
-    List<Object[]> getAppointmentStatusBreakdown(@Param("dealerId") Long dealerId);
-
-    // ========== Customer History ==========
-
-    @Query("SELECT a FROM Appointment a WHERE a.customer.id = :customerId ORDER BY a.appointmentTime DESC")
-    List<Appointment> findCustomerAppointmentHistory(@Param("customerId") Long customerId);
-
-    @Query("SELECT COUNT(a) FROM Appointment a WHERE a.customer.id = :customerId AND a.status = 'COMPLETED'")
-    long countCompletedAppointmentsByCustomer(@Param("customerId") Long customerId);
+    /**
+     * Đếm upcoming appointments của customer
+     */
+    @Query("SELECT COUNT(a) FROM Appointment a WHERE " +
+            "a.customer.id = :customerId AND " +
+            "a.appointmentTime > :currentTime AND " +
+            "a.status NOT IN ('CANCELLED', 'COMPLETED', 'NO_SHOW')")
+    Long countUpcomingByCustomer(
+            @Param("customerId") Long customerId,
+            @Param("currentTime") OffsetDateTime currentTime
+    );
 }
