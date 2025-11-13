@@ -1,0 +1,115 @@
+:root {
+  --color-background-base: #ffffff;
+  --color-page-background: #f3f5fb;
+  --color-surface: #e6ecf6;
+  --color-surface-strong: #d9e1ef;
+  --color-border-soft: #c8d1e0;
+  --color-primary: #0b5ed7;
+  --color-primary-hover: #094bb0;
+  --color-text-primary: #1f2937;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #6b7280;
+  --color-text-on-primary: #ffffff;
+  --color-search-background: #d6dae3;
+  --color-placeholder: #9ca3af;
+  --color-error-background: #fde2e1;
+  --color-error-text: #b91c1c;
+  --color-table-row-even: #f6f7fc;
+  --color-table-row-odd: #e9ecf5;
+  --color-status-available-background: #d1fae5;
+  --color-status-available-text: #047857;
+  --color-status-in-transit-background: #fef3c7;
+  --color-status-in-transit-text: #b45309;
+  --color-status-reserved-background: #dbeafe;
+  --color-status-reserved-text: #1d4ed8;
+  --color-status-sold-background: #e5e7eb;
+  --color-status-sold-text: #374151;
+}
+
+.bg-base {
+  background-color: var(--color-background-base);
+}
+
+.bg-page {
+  background-color: var(--color-page-background);
+}
+
+.bg-surface {
+  background-color: var(--color-surface);
+}
+
+.bg-surface-strong {
+  background-color: var(--color-surface-strong);
+}
+
+.bg-primary {
+  background-color: var(--color-primary);
+}
+
+.bg-primary-hover {
+  background-color: var(--color-primary-hover);
+}
+
+.bg-search {
+  background-color: var(--color-search-background);
+}
+
+.text-primary {
+  color: var(--color-text-primary);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+.text-on-primary {
+  color: var(--color-text-on-primary);
+}
+
+.border-soft {
+  border-color: var(--color-border-soft);
+}
+
+.bg-error {
+  background-color: var(--color-error-background);
+}
+
+.text-error {
+  color: var(--color-error-text);
+}
+
+.table-row-even {
+  background-color: var(--color-table-row-even);
+}
+
+.table-row-odd {
+  background-color: var(--color-table-row-odd);
+}
+
+.status-available {
+  background-color: var(--color-status-available-background);
+  color: var(--color-status-available-text);
+}
+
+.status-in-transit {
+  background-color: var(--color-status-in-transit-background);
+  color: var(--color-status-in-transit-text);
+}
+
+.status-reserved {
+  background-color: var(--color-status-reserved-background);
+  color: var(--color-status-reserved-text);
+}
+
+.status-sold {
+  background-color: var(--color-status-sold-background);
+  color: var(--color-status-sold-text);
+}
+
+.placeholder-muted::placeholder {
+  color: var(--color-placeholder);
+}

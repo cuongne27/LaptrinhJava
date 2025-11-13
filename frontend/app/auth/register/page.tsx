@@ -44,7 +44,7 @@ export default function RegisterPage() {
                   type="password"
                   id="password"
                   className="w-full py-3 px-4 bg-gray-100 rounded text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
-                  placeholder="......................"
+                  placeholder="••••••••"
                 />
               </div>
 
@@ -60,7 +60,7 @@ export default function RegisterPage() {
                   type="password"
                   id="confirmPassword"
                   className="w-full py-3 px-4 bg-gray-100 rounded text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
-                  placeholder="......................"
+                  placeholder="••••••••"
                 />
               </div>
 

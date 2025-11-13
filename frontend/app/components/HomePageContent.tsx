@@ -30,7 +30,7 @@ const QUICK_NAV_ITEMS = [
   { name: "User", href: "/entities/user" },
   { name: "ProductFeature", href: "/entities/product-feature" },
   { name: "SalesOrderDetails", href: "/entities/sales-order-details"},
-  { name: "Vehicle", href: "/entities/vehicle" },
+  { name: "Vehicle", href: "/entities/vehicles" },
 ];
 
 export default function HomePageContent() {

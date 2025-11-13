@@ -6,10 +6,10 @@ import searchIcon from '@/public/search-icon.svg';
 
 export default function Header() {
   return (
-    <header className="bg-white w-full">
+    <header className="bg-base w-full">
       {/* Top Bar */}
       <Container>
-        <div className="flex items-center justify-between py-4">
+        <div className="flex items-center justify-between py-2">
           <div className="flex items-center">
             <Link href="/" aria-label="Về trang chủ" className="block">
               <Image
@@ -17,32 +17,32 @@ export default function Header() {
                 alt="TESLO"
                 width={120}
                 height={40}
-                className="h-10 w-auto"
+                className="h-8 w-auto"
                 priority
               />
             </Link>
           </div>
 
           {/* Center: Search Bar */}
-          <div className="mx-[75px] flex-1">
+          <div className="mx-[48px] flex-1">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search..."
-                className="w-full rounded-full bg-gray-300/80 py-3 text-base text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white pl-[75px] pr-[75px]"
+                className="placeholder-muted w-full rounded-full bg-search py-2 pl-[56px] pr-[56px] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-background-base)]"
               />
               <Image
                 src={searchIcon}
                 alt="Search"
                 width={20}
                 height={20}
-                className="absolute right-[28px] top-1/2 h-5 w-5 -translate-y-1/2 transform"
+                className="absolute right-6 top-1/2 h-4 w-4 -translate-y-1/2 transform"
               />
             </div>
           </div>
 
           {/* Right: Icons */}
-          <div className="flex items-center gap-[70px]">
+          <div className="flex items-center gap-10">
             <button type="button" aria-label="Liên hệ" className="h-6 w-6">
               <Image
                 src="/phone-icon.svg"
@@ -75,14 +75,20 @@ export default function Header() {
       </Container>
 
       {/* Blue Navigation Bar */}
-      <nav className="bg-blue-600 w-full py-3">
+      <nav className="bg-primary w-full py-2">
         <Container>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <Link href="/" className="text-white font-sans hover:text-gray-200 transition">
+              <Link
+                href="/"
+                className="font-sans text-on-primary transition hover:opacity-80"
+              >
                 TRANG CHỦ
               </Link>
-              <a href="#" className="text-white font-sans hover:text-gray-200 transition">
+              <a
+                href="#"
+                className="font-sans text-on-primary transition hover:opacity-80"
+              >
                 XE ĐIỆN TESLO
               </a>
             </div>
