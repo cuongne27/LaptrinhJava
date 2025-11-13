@@ -3,9 +3,15 @@ import React from "react";
 export interface InventoryTableRowData {
   id: string;
   name: string;
+  modelName?: string;
   vin?: string;
   color?: string;
+  arrivalDate?: string;
+  condition?: string;
+  warehouse?: string;
   status?: string;
+  statusLabel?: string;
+  actionHref?: string;
   dealerName?: string;
   priceLabel?: string;
   stockLabel?: string | number;

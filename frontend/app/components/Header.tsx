@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Container from './Container';
-import searchIcon from '@/public/search-icon.svg';
+import VehicleSearchBar from './VehicleSearchBar';
 
 export default function Header() {
   return (
@@ -25,20 +25,11 @@ export default function Header() {
 
           {/* Center: Search Bar */}
           <div className="mx-[48px] flex-1">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="placeholder-muted w-full rounded-full bg-search py-2 pl-[56px] pr-[56px] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-background-base)]"
-              />
-              <Image
-                src={searchIcon}
-                alt="Search"
-                width={20}
-                height={20}
-                className="absolute right-6 top-1/2 h-4 w-4 -translate-y-1/2 transform"
-              />
-            </div>
+            <VehicleSearchBar
+              placeholder="Search..."
+              onSearch={() => {}}
+              inputClassName="py-2"
+            />
           </div>
 
           {/* Right: Icons */}

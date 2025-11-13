@@ -1,12 +1,15 @@
 "use client";
 
 import React, { ChangeEvent, FormEvent, useEffect, useState } from "react";
-import SearchIcon from "@/public/search-icon.svg";
+import Image from "next/image";
+import searchIcon from "@/public/search-icon.svg";
+
 interface VehicleSearchBarProps {
   placeholder?: string;
   defaultValue?: string;
   onSearch: (value: string) => void;
   className?: string;
+  inputClassName?: string;
 }
 
 export default function VehicleSearchBar({
@@ -14,6 +17,7 @@ export default function VehicleSearchBar({
   defaultValue = "",
   onSearch,
   className = "",
+  inputClassName = "",
 }: VehicleSearchBarProps) {
   const [value, setValue] = useState(defaultValue);
 
@@ -48,11 +52,20 @@ export default function VehicleSearchBar({
         onChange={handleChange}
         onBlur={handleBlur}
         placeholder={placeholder}
-        className="placeholder-muted w-full rounded-full bg-search px-5 py-3 pl-12 text-sm font-medium text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+        className={[
+          "placeholder-muted w-full rounded-full bg-search px-5 py-3 pl-12 text-sm font-medium text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]",
+          inputClassName,
+        ]
+          .filter(Boolean)
+          .join(" ")}
       />
-      <span className="pointer-events-none absolute left-4 text-lg text-[var(--color-text-muted)]">
-        🔍
-      </span>
+      <Image
+        src={searchIcon}
+        alt="Search"
+        width={20}
+        height={20}
+        className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 transform"
+      />
     </form>
   );
 }
