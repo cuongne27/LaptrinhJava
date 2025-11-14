@@ -45,6 +45,12 @@ interface FilterBarProps {
   selectedDealer?: string;
   onDealerChange?: (value: string) => void;
   
+  // Customer filter
+  showCustomerFilters?: boolean;
+  customerTypeOptions?: FilterOption[];
+  selectedCustomerType?: string;
+  onCustomerTypeChange?: (value: string) => void;
+  
   className?: string;
 }
 
@@ -81,6 +87,10 @@ export default function FilterBar({
   dealerOptions = [],
   selectedDealer,
   onDealerChange,
+  showCustomerFilters = false,
+  customerTypeOptions = [],
+  selectedCustomerType,
+  onCustomerTypeChange,
   className = "",
 }: FilterBarProps) {
   return (
@@ -162,6 +172,21 @@ export default function FilterBar({
               selectedValue={selectedDealer}
               onOptionSelect={(value) => onDealerChange?.(value)}
               placeholder="Đại lý"
+              className="min-w-[150px]"
+            />
+          )}
+        </div>
+      )}
+
+      {/* Customer filters row */}
+      {showCustomerFilters && (
+        <div className="flex flex-wrap items-center gap-3">
+          {customerTypeOptions.length > 0 && (
+            <FilterDropdown
+              options={customerTypeOptions}
+              selectedValue={selectedCustomerType}
+              onOptionSelect={(value) => onCustomerTypeChange?.(value)}
+              placeholder="Loại khách hàng"
               className="min-w-[150px]"
             />
           )}

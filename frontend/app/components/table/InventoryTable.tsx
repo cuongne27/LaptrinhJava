@@ -34,13 +34,13 @@ export default function InventoryTable({
             {isLoading ? (
               <tr>
                 <td colSpan={columns.length} className="px-4 py-8 text-center text-muted">
-                  Đang tải dữ liệu xe...
+                  Đang tải dữ liệu...
                 </td>
               </tr>
             ) : showEmptyState ? (
               <tr>
                 <td colSpan={columns.length} className="px-4 py-8 text-center text-muted">
-                  Chưa có dữ liệu xe.
+                  Chưa có dữ liệu.
                 </td>
               </tr>
             ) : (

@@ -18,7 +18,6 @@ const QUICK_NAV_ITEMS = [
   { name: "Promotion", href: "/entities/promotion" },
   { name: "SellInRequestDetails", href: "/entities/sell-in-request-details" },
   { name: "VehicleServiceHistory", href: "/entities/vehicle-service-history" },
-  { name: "Customer", href: "/entities/customer" },
   { name: "Payment", href: "/entities/payment" },
   { name: "Role", href: "/entities/role" },
   { name: "SupportTicket", href: "/entities/support-ticket" },
@@ -33,6 +32,7 @@ const QUICK_NAV_ITEMS = [
   { name: "ProductFeature", href: "/entities/product-feature" },
   { name: "SalesOrderDetails", href: "/entities/sales-order-details"},
   { name: "Vehicle", href: "/entities/vehicles" },
+  { name: "Customer", href: "/entities/customers" },
 ];
 
 export default function HomePageContent() {

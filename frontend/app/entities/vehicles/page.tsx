@@ -1,5 +1,8 @@
+"use client";
+
 import React from "react";
 import VehicleListContent from "../../components/vehicle/VehicleListContent";
+import ProtectedRoute from "../../components/auth/ProtectedRoute";
 import type { FilterOption } from "../../components/filter/FilterDropdown";
 
 const SORT_OPTIONS: FilterOption[] = [
@@ -10,6 +13,10 @@ const SORT_OPTIONS: FilterOption[] = [
 ];
 
 export default function VehiclesPage() {
-  return <VehicleListContent pageType="vehicles" sortOptions={SORT_OPTIONS} />;
+  return (
+    <ProtectedRoute>
+      <VehicleListContent pageType="vehicles" sortOptions={SORT_OPTIONS} />
+    </ProtectedRoute>
+  );
 }
 

@@ -1,10 +1,14 @@
+"use client";
+
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Container from './Container';
 import VehicleSearchBar from '../search/VehicleSearchBar';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function Header() {
+  const { isAuthenticated, user, logout } = useAuth();
   return (
     <header className="bg-base w-full">
       {/* Top Bar */}
@@ -52,15 +56,25 @@ export default function Header() {
                 className="h-6 w-6 cursor-pointer"
               />
             </button>
-            <button type="button" aria-label="Tài khoản" className="h-6 w-6">
-              <Image
-                src="/user-icon.svg"
-                alt="Tài khoản"
-                width={24}
-                height={24}
-                className="h-6 w-6 cursor-pointer"
-              />
-            </button>
+            {isAuthenticated && user ? (
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-secondary">{user.username}</span>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition hover:bg-primary-hover"
+                >
+                  Đăng xuất
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/auth/login"
+                className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition hover:bg-primary-hover"
+              >
+                Đăng nhập
+              </Link>
+            )}
           </div>
         </div>
       </Container>
