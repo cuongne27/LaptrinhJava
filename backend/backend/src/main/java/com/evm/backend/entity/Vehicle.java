@@ -48,4 +48,18 @@ public class Vehicle {
 
     @OneToMany(mappedBy = "vehicle")
     private Set<SupportTicket> supportTickets;
+
+    // Vehicle.java
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Vehicle)) return false;
+        Vehicle vehicle = (Vehicle) o;
+        return id != null && id.equals(vehicle.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

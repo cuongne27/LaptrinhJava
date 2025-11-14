@@ -43,4 +43,18 @@ public class DealerContract {
     @ManyToOne
     @JoinColumn(name = "dealer_id")
     private Dealer dealer;
+
+    // DealerContract.java
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof DealerContract)) return false;
+        DealerContract that = (DealerContract) o;
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

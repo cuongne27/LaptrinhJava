@@ -1,19 +1,18 @@
-// 5. PRODUCT Entity
+// 3. PRODUCT Entity - FIXED
 package com.evm.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 @Entity
-@Data
+@Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -53,13 +52,16 @@ public class Product {
     private Brand brand;
 
     @OneToMany(mappedBy = "product")
-    private Set<Vehicle> vehicles;
+    @Builder.Default
+    private Set<Vehicle> vehicles = new HashSet<>();
 
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
-    private Set<Appointment> appointments;
+    @Builder.Default
+    private Set<Appointment> appointments = new HashSet<>();
 
     @OneToMany(mappedBy = "product")
-    private Set<SellInRequestDetails> sellInRequestDetails;
+    @Builder.Default
+    private Set<SellInRequestDetails> sellInRequestDetails = new HashSet<>();
 
     @Embedded
     private TechnicalSpecs technicalSpecs;
@@ -69,7 +71,8 @@ public class Product {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
-    @JsonManagedReference // Để hiển thị 'features' khi get 'Product'
+    @JsonManagedReference
+    @Builder.Default
     private List<ProductFeature> features = new ArrayList<>();
 
     @OneToMany(
@@ -77,6 +80,20 @@ public class Product {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
-    @JsonManagedReference // Để hiển thị 'features' khi get 'Product'
+    @JsonManagedReference
+    @Builder.Default
     private List<ProductVariant> variants = new ArrayList<>();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Product)) return false;
+        Product product = (Product) o;
+        return id != null && id.equals(product.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

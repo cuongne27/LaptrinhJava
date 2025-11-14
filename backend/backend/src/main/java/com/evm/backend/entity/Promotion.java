@@ -25,6 +25,9 @@ public class Promotion {
     @Column(name = "promotion_code", length = 50)
     private String promotionCode;
 
+    @Column(name = "promotion_name", length = 100)
+    private String promotionName;
+
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 

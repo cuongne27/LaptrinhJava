@@ -1,15 +1,14 @@
-// 2. BRAND Entity
+// 1. BRAND Entity - FIXED
 package com.evm.backend.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Data
+@Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -33,14 +32,32 @@ public class Brand {
     private String contactInfo;
 
     @OneToMany(mappedBy = "brand")
-    private Set<User> users;
+    @Builder.Default
+    private Set<User> users = new HashSet<>();
 
     @OneToMany(mappedBy = "brand")
-    private Set<Dealer> dealers;
+    @Builder.Default
+    private Set<Dealer> dealers = new HashSet<>();
 
     @OneToMany(mappedBy = "brand")
-    private Set<Product> products;
+    @Builder.Default
+    private Set<Product> products = new HashSet<>();
 
     @OneToMany(mappedBy = "brand")
-    private Set<DealerContract> dealerContracts;
+    @Builder.Default
+    private Set<DealerContract> dealerContracts = new HashSet<>();
+
+    // CHỈ dùng ID cho hashCode và equals
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Brand)) return false;
+        Brand brand = (Brand) o;
+        return id != null && id.equals(brand.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }
