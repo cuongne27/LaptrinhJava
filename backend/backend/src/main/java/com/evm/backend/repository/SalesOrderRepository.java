@@ -1,9 +1,8 @@
 package com.evm.backend.repository;
 
-import com.evm.backend.entity.Customer;
 import com.evm.backend.entity.SalesOrder;
-import com.evm.backend.entity.User;
-import com.evm.backend.entity.Vehicle;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,38 +15,111 @@ import java.util.Optional;
 
 @Repository
 public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
-    List<SalesOrder> findByCustomer(Customer customer);
 
+    /**
+     * Tìm tất cả orders của customer
+     */
     List<SalesOrder> findByCustomerId(Long customerId);
 
-    List<SalesOrder> findBySalesPerson(User salesPerson);
-
+    /**
+     * Tìm tất cả orders của sales person
+     */
     List<SalesOrder> findBySalesPersonId(Long salesPersonId);
 
-    List<SalesOrder> findByVehicle(Vehicle vehicle);
+    /**
+     * Tìm tất cả orders của vehicle
+     */
+    List<SalesOrder> findByVehicleId(String vehicleId);
 
+    /**
+     * Tìm orders theo status
+     */
     List<SalesOrder> findByStatus(String status);
 
-    @Query("SELECT so FROM SalesOrder so WHERE so.orderDate BETWEEN :startDate AND :endDate")
-    List<SalesOrder> findByDateRange(@Param("startDate") LocalDate startDate,
-                                     @Param("endDate") LocalDate endDate);
+    /**
+     * Tìm orders với filter
+     */
+    @Query("SELECT o FROM SalesOrder o WHERE " +
+            "(:customerId IS NULL OR o.customer.id = :customerId) AND " +
+            "(:salesPersonId IS NULL OR o.salesPerson.id = :salesPersonId) AND " +
+            "(:vehicleId IS NULL OR o.vehicle.id = :vehicleId) AND " +
+            "(:status IS NULL OR o.status = :status) AND " +
+            "(:fromDate IS NULL OR o.orderDate >= :fromDate) AND " +
+            "(:toDate IS NULL OR o.orderDate <= :toDate)")
+    Page<SalesOrder> findOrdersWithFilters(
+            @Param("customerId") Long customerId,
+            @Param("salesPersonId") Long salesPersonId,
+            @Param("vehicleId") String vehicleId,
+            @Param("status") String status,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate,
+            Pageable pageable
+    );
 
-    @Query("SELECT so FROM SalesOrder so WHERE so.salesPerson.dealer.id = :dealerId")
-    List<SalesOrder> findByDealerId(@Param("dealerId") Long dealerId);
+    /**
+     * Tìm order với đầy đủ thông tin (Bao gồm các mối quan hệ lồng nhau)
+     */
+    @Query("SELECT DISTINCT o FROM SalesOrder o " +
+            "LEFT JOIN FETCH o.vehicle v " +          // Tải Vehicle
+            "LEFT JOIN FETCH v.product p " +          // Tải Product (từ Vehicle)
+            "LEFT JOIN FETCH p.brand b " +            // Tải Brand (từ Product)
+            "LEFT JOIN FETCH o.customer " +
+            "LEFT JOIN FETCH o.salesPerson " +
+            "LEFT JOIN FETCH o.payments " +
+            "LEFT JOIN FETCH o.orderPromotions op " + // Tải OrderPromotion
+            "LEFT JOIN FETCH op.promotion " +         // Tải Promotion (từ OrderPromotion)
+            "WHERE o.id = :orderId")
+    Optional<SalesOrder> findByIdWithDetails(@Param("orderId") Long orderId);
 
-    @Query("SELECT so FROM SalesOrder so WHERE so.salesPerson.dealer.id = :dealerId AND so.orderDate BETWEEN :startDate AND :endDate")
-    List<SalesOrder> findByDealerAndDateRange(@Param("dealerId") Long dealerId,
-                                              @Param("startDate") LocalDate startDate,
-                                              @Param("endDate") LocalDate endDate);
+    /**
+     * Kiểm tra vehicle đã được bán chưa
+     */
+    @Query("SELECT COUNT(o) > 0 FROM SalesOrder o " +
+            "WHERE o.vehicle.id = :vehicleId " +
+            "AND o.status IN ('PAID', 'COMPLETED')")
+    boolean existsByVehicleIdAndSold(@Param("vehicleId") String vehicleId);
 
-    @Query("SELECT SUM(so.totalPrice) FROM SalesOrder so WHERE so.salesPerson.dealer.id = :dealerId AND so.status = 'COMPLETED'")
-    BigDecimal getTotalRevenueByDealer(@Param("dealerId") Long dealerId);
+    /**
+     * Lấy tổng doanh số theo sales person
+     */
+    @Query("SELECT SUM(o.totalPrice) FROM SalesOrder o " +
+            "WHERE o.salesPerson.id = :salesPersonId " +
+            "AND o.status IN ('PAID', 'COMPLETED')")
+    Optional<BigDecimal> getTotalSalesBySalesPerson(@Param("salesPersonId") Long salesPersonId);
 
-    @Query("SELECT COUNT(so) FROM SalesOrder so WHERE so.salesPerson.dealer.id = :dealerId AND so.orderDate BETWEEN :startDate AND :endDate")
-    long countByDealerAndDateRange(@Param("dealerId") Long dealerId,
-                                   @Param("startDate") LocalDate startDate,
-                                   @Param("endDate") LocalDate endDate);
+    /**
+     * Lấy báo cáo doanh số theo tháng
+     */
+    @Query("SELECT o FROM SalesOrder o " +
+            "WHERE YEAR(o.orderDate) = :year " +
+            "AND MONTH(o.orderDate) = :month " +
+            "ORDER BY o.orderDate DESC")
+    List<SalesOrder> findMonthlySales(@Param("year") int year, @Param("month") int month);
 
-    @Query("SELECT so FROM SalesOrder so WHERE so.status = :status ORDER BY so.orderDate DESC")
-    List<SalesOrder> findByStatusOrderByDateDesc(@Param("status") String status);
+    /**
+     * Lấy recent orders
+     */
+    @Query("SELECT o FROM SalesOrder o " +
+            "WHERE o.orderDate >= :fromDate " +
+            "ORDER BY o.orderDate DESC")
+    List<SalesOrder> findRecentOrders(@Param("fromDate") LocalDate fromDate);
+
+    /**
+     * Đếm orders theo status
+     */
+    @Query("SELECT COUNT(o) FROM SalesOrder o WHERE " +
+            "o.status = :status AND " +
+            "(:salesPersonId IS NULL OR o.salesPerson.id = :salesPersonId)")
+    Long countByStatus(
+            @Param("status") String status,
+            @Param("salesPersonId") Long salesPersonId
+    );
+
+    /**
+     * Lấy pending orders của customer
+     */
+    @Query("SELECT COUNT(o) FROM SalesOrder o WHERE " +
+            "o.customer.id = :customerId AND " +
+            "o.status NOT IN ('COMPLETED', 'CANCELLED')")
+    Long countPendingByCustomer(@Param("customerId") Long customerId);
 }

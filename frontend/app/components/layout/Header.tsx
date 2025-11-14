@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Container from './Container';
-import VehicleSearchBar from './VehicleSearchBar';
+import VehicleSearchBar from '../search/VehicleSearchBar';
 
 export default function Header() {
   return (
@@ -89,3 +89,4 @@ export default function Header() {
     </header>
   );
 }
+

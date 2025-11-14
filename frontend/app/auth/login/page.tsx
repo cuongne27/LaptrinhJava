@@ -1,6 +1,6 @@
 import React from "react";
-import Header from "../../components/Header";
-import Container from "../../components/Container";
+import Header from "../../components/layout/Header";
+import Container from "../../components/layout/Container";
 
 export default function LoginPage() {
   return (

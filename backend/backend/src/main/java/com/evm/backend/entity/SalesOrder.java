@@ -58,6 +58,23 @@ public class SalesOrder {
     @OneToMany(mappedBy = "order")
     private Set<Payment> payments;
 
-    @OneToMany(mappedBy = "order")
+    @OneToMany(
+            mappedBy = "order",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
     private Set<OrderPromotions> orderPromotions;
+
+    // SalesOrder.java
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SalesOrder)) return false;
+        SalesOrder that = (SalesOrder) o;
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

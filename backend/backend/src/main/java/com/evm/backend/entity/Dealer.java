@@ -1,15 +1,14 @@
-// 3. DEALER Entity
+// 2. DEALER Entity - FIXED
 package com.evm.backend.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Data
+@Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -40,17 +39,35 @@ public class Dealer {
     private Brand brand;
 
     @OneToMany(mappedBy = "dealer")
-    private Set<User> users;
+    @Builder.Default
+    private Set<User> users = new HashSet<>();
 
     @OneToMany(mappedBy = "dealer")
-    private Set<Vehicle> vehicles;
+    @Builder.Default
+    private Set<Vehicle> vehicles = new HashSet<>();
 
     @OneToMany(mappedBy = "dealer")
-    private Set<Appointment> appointments;
+    @Builder.Default
+    private Set<Appointment> appointments = new HashSet<>();
 
     @OneToMany(mappedBy = "dealer")
-    private Set<SellInRequest> sellInRequests;
+    @Builder.Default
+    private Set<SellInRequest> sellInRequests = new HashSet<>();
 
     @OneToMany(mappedBy = "dealer")
-    private Set<DealerContract> dealerContracts;
+    @Builder.Default
+    private Set<DealerContract> dealerContracts = new HashSet<>();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Dealer)) return false;
+        Dealer dealer = (Dealer) o;
+        return id != null && id.equals(dealer.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

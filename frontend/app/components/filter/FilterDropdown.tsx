@@ -1,30 +1,32 @@
 "use client";
 
 import React, { useEffect, useId, useRef, useState } from "react";
-import { FiFilter } from "react-icons/fi";
+import { FiChevronDown } from "react-icons/fi";
 
 export interface FilterOption {
   value: string;
   label: string;
 }
 
-interface VehicleFilterButtonProps {
+interface FilterDropdownProps {
   options: FilterOption[];
   selectedValue?: string;
   onOptionSelect: (value: string) => void;
-  icon?: React.ReactNode;
+  placeholder?: string;
   label?: string;
   className?: string;
+  showIcon?: boolean;
 }
 
-export default function VehicleFilterButton({
+export default function FilterDropdown({
   options,
   selectedValue,
   onOptionSelect,
-  icon,
-  label = "Lọc",
+  placeholder = "Chọn...",
+  label,
   className = "",
-}: VehicleFilterButtonProps) {
+  showIcon = true,
+}: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const listboxId = useId();
@@ -54,32 +56,56 @@ export default function VehicleFilterButton({
     setIsOpen(false);
   };
 
-  const selectedLabel =
-    options.find((option) => option.value === selectedValue)?.label ?? label;
+  const selectedOption = options.find((option) => option.value === selectedValue);
+  const displayText = selectedOption ? selectedOption.label : placeholder;
 
   return (
     <div
       ref={containerRef}
       className={["relative", className].filter(Boolean).join(" ")}
-      title="Chọn cách sắp xếp xe">
+    >
+      {label && (
+        <label className="mb-1 block text-xs font-semibold text-secondary">
+          {label}
+        </label>
+      )}
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="flex h-11 items-center gap-2 rounded-2xl border-soft bg-base px-4 py-2 text-sm font-semibold text-secondary shadow-md transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+        className="flex h-11 w-full items-center justify-between gap-2 rounded-2xl border border-soft bg-base px-4 py-2 text-sm font-semibold text-secondary shadow-md transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-controls={listboxId}
       >
-        {icon ?? <FiFilter className="h-5 w-5" />}
-        <span>{selectedLabel}</span>
+        <span className={selectedOption ? "" : "text-muted"}>{displayText}</span>
+        {showIcon && <FiChevronDown className="h-4 w-4" />}
       </button>
 
       {isOpen ? (
         <ul
           id={listboxId}
           role="listbox"
-          className="absolute right-0 z-20 mt-2 w-48 rounded-2xl border-soft bg-base py-2 shadow-xl"
+          className="absolute left-0 right-0 z-[100] mt-2 max-h-60 overflow-auto rounded-2xl border border-soft bg-base py-2 shadow-xl"
         >
+          <li>
+            <button
+              type="button"
+              role="option"
+              aria-selected={!selectedValue}
+              onClick={() => handleSelect("")}
+              className={[
+                "flex w-full items-center justify-between px-4 py-2 text-sm text-secondary transition",
+                !selectedValue
+                  ? "bg-surface-strong text-[var(--color-primary)]"
+                  : "hover:bg-surface",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              <span>Tất cả</span>
+              {!selectedValue ? <span>✓</span> : null}
+            </button>
+          </li>
           {options.map((option) => (
             <li key={option.value}>
               <button
@@ -106,3 +132,4 @@ export default function VehicleFilterButton({
     </div>
   );
 }
+

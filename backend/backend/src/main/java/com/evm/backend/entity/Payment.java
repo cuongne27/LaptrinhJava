@@ -36,6 +36,9 @@ public class Payment {
     @Column(name = "reference_number", length = 100)
     private String referenceNumber;
 
+    @Column(name = "status", length = 30)
+    private String status;
+
     @ManyToOne
     @JoinColumn(name = "order_id")
     private SalesOrder order;
