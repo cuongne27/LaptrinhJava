@@ -4,6 +4,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Header from "../layout/Header";
 import Container from "../layout/Container";
 import FilterBar from "../filter/FilterBar";
+import CrudActionButton from "../crud/CrudActionButton";
+import CrudFormModal from "../crud/CrudFormModal";
 import InventoryTable from "../table/InventoryTable";
 import Pagination from "../pagination/Pagination";
 import {
@@ -96,6 +98,43 @@ export default function VehicleListContent({
   const [vinOptions, setVinOptions] = useState<FilterOption[]>([]);
   const [inventoryStatusOptions, setInventoryStatusOptions] = useState<FilterOption[]>([]);
   const [warehouseOptions, setWarehouseOptions] = useState<FilterOption[]>([]);
+
+  // CRUD modal state
+  const [isCrudModalOpen, setIsCrudModalOpen] = useState(false);
+  const [crudMode, setCrudMode] = useState<"create" | "edit" | "delete">("create");
+  const [selectedItem, setSelectedItem] = useState<VehicleListResponse | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // CRUD configuration per page type
+  const vehicleCrudConfig = useMemo(
+    () => ({
+      baseUrl: `${API_BASE_URL}/api/vehicles`,
+      fields: [
+        { name: "vin", label: "VIN", type: "text", required: true },
+        { name: "color", label: "Màu", type: "text", required: true },
+        { name: "manufactureDate", label: "Ngày sản xuất", type: "date", required: true },
+        { name: "status", label: "Trạng thái", type: "select", required: true },
+        { name: "productId", label: "Sản phẩm", type: "select", required: true },
+        { name: "dealerId", label: "Đại lý", type: "select", required: true },
+      ],
+    }),
+    []
+  );
+
+  const inventoryCrudConfig = useMemo(
+    () => ({
+      baseUrl: `${API_BASE_URL}/api/vehicles`,
+      fields: [
+        { name: "vin", label: "VIN", type: "text", required: true },
+        { name: "color", label: "Màu", type: "text", required: true },
+        { name: "manufactureDate", label: "Ngày nhập kho", type: "date", required: true },
+        { name: "status", label: "Trạng thái tồn kho", type: "select", required: true },
+        { name: "productId", label: "Sản phẩm", type: "select", required: true },
+        { name: "dealerId", label: "Đại lý", type: "select", required: true },
+      ],
+    }),
+    []
+  );
 
   // Fetch all vehicles for inventory filter options
   const fetchAllInventoryVehicles = useCallback(async () => {
@@ -429,6 +468,72 @@ export default function VehicleListContent({
     ]
   );
 
+  const handleCrudAction = useCallback(
+    (mode: "create" | "edit" | "delete", item?: VehicleListResponse) => {
+      setCrudMode(mode);
+      setSelectedItem(item || null);
+      setIsCrudModalOpen(true);
+    },
+    []
+  );
+
+  const handleCrudSubmit = useCallback(
+    async (formData: any) => {
+      try {
+        setIsSubmitting(true);
+
+        const token =
+          typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+
+        const config = pageType === "inventory" ? inventoryCrudConfig : vehicleCrudConfig;
+
+        let url = config.baseUrl;
+        let method: "POST" | "PUT" | "DELETE" = "POST";
+
+        if (crudMode === "edit" && selectedItem) {
+          url += `/${selectedItem.id}`;
+          method = "PUT";
+        } else if (crudMode === "delete" && selectedItem) {
+          url += `/${selectedItem.id}`;
+          method = "DELETE";
+        }
+
+        const response = await fetch(url, {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          credentials: "include",
+          body: crudMode !== "delete" ? JSON.stringify(formData) : undefined,
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error(
+              "Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+            );
+          }
+
+          throw new Error("Không thể thực hiện thao tác. Vui lòng thử lại.");
+        }
+
+        setIsCrudModalOpen(false);
+        await fetchVehicles(currentPage);
+      } catch (error) {
+        console.error("Failed to perform CRUD operation", error);
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "Không thể thực hiện thao tác. Vui lòng thử lại."
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [crudMode, selectedItem, pageType, vehicleCrudConfig, inventoryCrudConfig, fetchVehicles, currentPage]
+  );
+
   useEffect(() => {
     fetchVehicles(currentPage);
   }, [fetchVehicles, currentPage]);
@@ -694,6 +799,11 @@ export default function VehicleListContent({
 
           <div className="relative z-0">
             <InventoryTable rows={rows} columns={columns} isLoading={isLoading} />
+
+            <CrudActionButton
+              onClick={() => handleCrudAction("create")}
+              className="absolute bottom-4 right-4 z-20"
+            />
           </div>
 
           {totalPages > 1 ? (
@@ -703,6 +813,55 @@ export default function VehicleListContent({
               onPageChange={(page) => setCurrentPage(page)}
             />
           ) : null}
+
+          <CrudFormModal
+            isOpen={isCrudModalOpen}
+            onClose={() => setIsCrudModalOpen(false)}
+            mode={crudMode}
+            title={
+              pageType === "inventory"
+                ? `${crudMode === "create" ? "Thêm" : crudMode === "edit" ? "Sửa" : "Xóa"} xe tồn kho`
+                : `${crudMode === "create" ? "Thêm" : crudMode === "edit" ? "Sửa" : "Xóa"} xe`
+            }
+            fields={(pageType === "inventory" ? inventoryCrudConfig.fields : vehicleCrudConfig.fields).map(
+              (field) => {
+                if (field.name === "status") {
+                  return {
+                    ...field,
+                    type: "select" as const,
+                    options:
+                      pageType === "inventory"
+                        ? inventoryStatusOptions
+                        : statusOptions,
+                  };
+                }
+
+                if (field.name === "productId") {
+                  return {
+                    ...field,
+                    type: "select" as const,
+                    options: productOptions,
+                  };
+                }
+
+                if (field.name === "dealerId") {
+                  return {
+                    ...field,
+                    type: "select" as const,
+                    options: dealerOptions,
+                  };
+                }
+
+                return {
+                  ...field,
+                  type: field.type as "number" | "date" | "text" | "select" | "textarea",
+                };
+              }
+            )}
+            initialData={selectedItem}
+            onSubmit={handleCrudSubmit}
+            isSubmitting={isSubmitting}
+          />
         </Container>
       </main>
     </div>

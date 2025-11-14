@@ -50,7 +50,10 @@ interface FilterBarProps {
   customerTypeOptions?: FilterOption[];
   selectedCustomerType?: string;
   onCustomerTypeChange?: (value: string) => void;
-  
+
+  // Extra actions on the right side (e.g. CRUD button)
+  actionsSlot?: React.ReactNode;
+
   className?: string;
 }
 
@@ -91,6 +94,7 @@ export default function FilterBar({
   customerTypeOptions = [],
   selectedCustomerType,
   onCustomerTypeChange,
+  actionsSlot,
   className = "",
 }: FilterBarProps) {
   return (
@@ -102,106 +106,108 @@ export default function FilterBar({
         .filter(Boolean)
         .join(" ")}
     >
-      {/* Inventory filters row */}
-      {showInventoryFilters && (
-        <div className="flex flex-wrap items-center gap-3">
-          <FilterDropdown
-            options={modelOptions}
-            selectedValue={selectedModel}
-            onOptionSelect={(value) => onModelChange?.(value)}
-            placeholder="Mẫu xe"
-            className="min-w-[150px]"
-          />
-          <FilterDropdown
-            options={vinOptions}
-            selectedValue={selectedVin}
-            onOptionSelect={(value) => onVinChange?.(value)}
-            placeholder="VIN"
-            className="min-w-[150px]"
-          />
-          <FilterDropdown
-            options={inventoryStatusOptions}
-            selectedValue={selectedInventoryStatus}
-            onOptionSelect={(value) => onInventoryStatusChange?.(value)}
-            placeholder="Trạng Thái"
-            className="min-w-[150px]"
-          />
-          <FilterDropdown
-            options={warehouseOptions}
-            selectedValue={selectedWarehouse}
-            onOptionSelect={(value) => onWarehouseChange?.(value)}
-            placeholder="Kho"
-            className="min-w-[150px]"
-          />
-        </div>
-      )}
-
-      {/* Vehicle filters row */}
-      {showVehicleFilters && (
-        <div className="flex flex-wrap items-center gap-3">
-          {productOptions.length > 0 && (
-            <FilterDropdown
-              options={productOptions}
-              selectedValue={selectedProduct}
-              onOptionSelect={(value) => onProductChange?.(value)}
-              placeholder="Mẫu xe"
-              className="min-w-[150px]"
-            />
-          )}
-          {colorOptions.length > 0 && (
-            <FilterDropdown
-              options={colorOptions}
-              selectedValue={selectedColor}
-              onOptionSelect={(value) => onColorChange?.(value)}
-              placeholder="Màu sắc"
-              className="min-w-[150px]"
-            />
-          )}
-          {vehicleStatusOptions.length > 0 && (
-            <FilterDropdown
-              options={vehicleStatusOptions}
-              selectedValue={selectedVehicleStatus}
-              onOptionSelect={(value) => onVehicleStatusChange?.(value)}
-              placeholder="Trạng thái"
-              className="min-w-[150px]"
-            />
-          )}
-          {dealerOptions.length > 0 && (
-            <FilterDropdown
-              options={dealerOptions}
-              selectedValue={selectedDealer}
-              onOptionSelect={(value) => onDealerChange?.(value)}
-              placeholder="Đại lý"
-              className="min-w-[150px]"
-            />
-          )}
-        </div>
-      )}
-
-      {/* Customer filters row */}
-      {showCustomerFilters && (
-        <div className="flex flex-wrap items-center gap-3">
-          {customerTypeOptions.length > 0 && (
-            <FilterDropdown
-              options={customerTypeOptions}
-              selectedValue={selectedCustomerType}
-              onOptionSelect={(value) => onCustomerTypeChange?.(value)}
-              placeholder="Loại khách hàng"
-              className="min-w-[150px]"
-            />
-          )}
-        </div>
-      )}
-
-      {/* Search and Sort row */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-1 items-center gap-4">
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Search luôn bên trái */}
+        <div className="flex min-w-[260px] flex-1 items-center gap-3">
           <VehicleSearchBar
             placeholder={searchPlaceholder}
             defaultValue={searchValue}
             onSearch={onSearch}
-            className="max-w-lg"
+            className="flex-1"
           />
+        </div>
+
+        {/* Filters ở giữa */}
+        {(showInventoryFilters || showVehicleFilters || showCustomerFilters) && (
+          <div className="flex flex-wrap items-center gap-3">
+            {showInventoryFilters && (
+              <>
+                <FilterDropdown
+                  options={modelOptions}
+                  selectedValue={selectedModel}
+                  onOptionSelect={(value) => onModelChange?.(value)}
+                  placeholder="Mẫu xe"
+                  className="min-w-[150px]"
+                />
+                <FilterDropdown
+                  options={vinOptions}
+                  selectedValue={selectedVin}
+                  onOptionSelect={(value) => onVinChange?.(value)}
+                  placeholder="VIN"
+                  className="min-w-[150px]"
+                />
+                <FilterDropdown
+                  options={inventoryStatusOptions}
+                  selectedValue={selectedInventoryStatus}
+                  onOptionSelect={(value) => onInventoryStatusChange?.(value)}
+                  placeholder="Trạng Thái"
+                  className="min-w-[150px]"
+                />
+                <FilterDropdown
+                  options={warehouseOptions}
+                  selectedValue={selectedWarehouse}
+                  onOptionSelect={(value) => onWarehouseChange?.(value)}
+                  placeholder="Kho"
+                  className="min-w-[150px]"
+                />
+              </>
+            )}
+
+            {showVehicleFilters && (
+              <>
+                {productOptions.length > 0 && (
+                  <FilterDropdown
+                    options={productOptions}
+                    selectedValue={selectedProduct}
+                    onOptionSelect={(value) => onProductChange?.(value)}
+                    placeholder="Mẫu xe"
+                    className="min-w-[150px]"
+                  />
+                )}
+                {dealerOptions.length > 0 && (
+                  <FilterDropdown
+                    options={dealerOptions}
+                    selectedValue={selectedDealer}
+                    onOptionSelect={(value) => onDealerChange?.(value)}
+                    placeholder="Đại lý"
+                    className="min-w-[150px]"
+                  />
+                )}
+                {vehicleStatusOptions.length > 0 && (
+                  <FilterDropdown
+                    options={vehicleStatusOptions}
+                    selectedValue={selectedVehicleStatus}
+                    onOptionSelect={(value) => onVehicleStatusChange?.(value)}
+                    placeholder="Trạng thái"
+                    className="min-w-[150px]"
+                  />
+                )}
+                {colorOptions.length > 0 && (
+                  <FilterDropdown
+                    options={colorOptions}
+                    selectedValue={selectedColor}
+                    onOptionSelect={(value) => onColorChange?.(value)}
+                    placeholder="Màu sắc"
+                    className="min-w-[150px]"
+                  />
+                )}
+              </>
+            )}
+
+            {showCustomerFilters && customerTypeOptions.length > 0 && (
+              <FilterDropdown
+                options={customerTypeOptions}
+                selectedValue={selectedCustomerType}
+                onOptionSelect={(value) => onCustomerTypeChange?.(value)}
+                placeholder="Loại khách hàng"
+                className="min-w-[150px]"
+              />
+            )}
+          </div>
+        )}
+
+        {/* Sort + actions bên phải */}
+        <div className="ml-auto flex items-center gap-3">
           <FilterDropdown
             options={sortOptions}
             selectedValue={selectedSort}
@@ -209,6 +215,11 @@ export default function FilterBar({
             placeholder="Sắp xếp"
             showIcon={true}
           />
+          {actionsSlot ? (
+            <div className="flex items-center">
+              {actionsSlot}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

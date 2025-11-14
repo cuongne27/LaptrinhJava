@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Header from "../layout/Header";
 import Container from "../layout/Container";
 import FilterBar from "../filter/FilterBar";
+import CrudActionButton from "../crud/CrudActionButton";
 import InventoryTable from "../table/InventoryTable";
 import Pagination from "../pagination/Pagination";
 import {
