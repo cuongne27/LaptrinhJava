@@ -77,12 +77,19 @@ public class SecurityConfiguration {
                                 auth
                                         // Cho phép đăng nhập public
                                         .requestMatchers("/api/auth/login").permitAll()
+                                        .requestMatchers(
+                                                "/swagger-ui/**",
+                                                "/swagger-ui.html",
+                                                "/v3/api-docs/**",
+                                                "/swagger-resources/**",
+                                                "/webjars/**"
+                                        ).permitAll()
 
                                         // CHỈ ADMIN MỚI ĐƯỢC DÙNG CHỨC NĂNG ĐĂNG KÝ
                                         .requestMatchers("/api/auth/sign-up").hasRole("ADMIN")
 
                                         // ... (các đường dẫn khác)
-                                        .anyRequest().authenticated()
+                                        .anyRequest().permitAll()
 
                 )
                 .formLogin(AbstractHttpConfigurer::disable)

@@ -1,9 +1,8 @@
 package com.evm.backend.repository;
 
-import com.evm.backend.entity.Dealer;
 import com.evm.backend.entity.Inventory;
-import com.evm.backend.entity.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -11,40 +10,74 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repository interface for Inventory entity
+ */
 @Repository
-public interface InventoryRepository extends JpaRepository<Inventory, Long> {
-    // Brand warehouse (dealer is null)
-    @Query("SELECT i FROM Inventory i WHERE i.dealer IS NULL")
-    List<Inventory> findBrandWarehouseInventory();
+public interface InventoryRepository extends JpaRepository<Inventory, Long>, JpaSpecificationExecutor<Inventory> {
 
-    // Dealer inventory
-    List<Inventory> findByDealer(Dealer dealer);
-
-    List<Inventory> findByDealerId(Long dealerId);
-
-    // Find by product
-    List<Inventory> findByProduct(Product product);
-
-    List<Inventory> findByProductId(Long productId);
-
-    // Find specific inventory
-    Optional<Inventory> findByProductAndDealer(Product product, Dealer dealer);
-
+    /**
+     * Find inventory by product ID and dealer ID
+     */
     Optional<Inventory> findByProductIdAndDealerId(Long productId, Long dealerId);
 
-    // Brand warehouse for specific product
-    @Query("SELECT i FROM Inventory i WHERE i.product.id = :productId AND i.dealer IS NULL")
-    Optional<Inventory> findBrandInventoryByProduct(@Param("productId") Long productId);
+    /**
+     * Find inventory by product ID, ordered by last updated
+     */
+    List<Inventory> findByProductIdOrderByUpdatedAtDesc(Long productId);
 
-    // Low stock
-    @Query("SELECT i FROM Inventory i WHERE i.availableQuantity <= :threshold")
+    /**
+     * Find inventory by dealer ID, ordered by last updated
+     */
+    List<Inventory> findByDealerIdOrderByUpdatedAtDesc(Long dealerId);
+
+    /**
+     * Find inventory for the brand warehouse (dealer is null), ordered by last updated
+     */
+    List<Inventory> findByDealerIsNullOrderByUpdatedAtDesc();
+
+    /**
+     * Find inventory items where available quantity is below a given threshold
+     */
+    @Query("SELECT i FROM Inventory i WHERE i.availableQuantity < :threshold ORDER BY i.availableQuantity ASC")
     List<Inventory> findLowStockInventory(@Param("threshold") Integer threshold);
 
-    // Available inventory for dealer
-    @Query("SELECT i FROM Inventory i WHERE i.dealer.id = :dealerId AND i.availableQuantity > 0")
-    List<Inventory> findAvailableInventoryByDealer(@Param("dealerId") Long dealerId);
+    /**
+     * Find inventory by ID with all details (product, brand, dealer)
+     */
+    @Query("SELECT i FROM Inventory i " +
+            "LEFT JOIN FETCH i.product p " +
+            "LEFT JOIN FETCH p.brand " +
+            "LEFT JOIN FETCH i.dealer " +
+            "WHERE i.id = :inventoryId")
+    Optional<Inventory> findByIdWithDetails(@Param("inventoryId") Long inventoryId);
 
-    // Total available by product
-    @Query("SELECT SUM(i.availableQuantity) FROM Inventory i WHERE i.product.id = :productId")
-    Integer getTotalAvailableByProduct(@Param("productId") Long productId);
+    /**
+     * Calculate total available quantity across all inventory records
+     */
+    @Query("SELECT SUM(i.availableQuantity) FROM Inventory i")
+    Long getTotalAvailableQuantity();
+
+    /**
+     * Calculate total reserved quantity across all inventory records
+     */
+    @Query("SELECT SUM(i.reservedQuantity) FROM Inventory i")
+    Long getTotalReservedQuantity();
+
+    /**
+     * Calculate total in-transit quantity across all inventory records
+     */
+    @Query("SELECT SUM(i.inTransitQuantity) FROM Inventory i")
+    Long getTotalInTransitQuantity();
+
+    /**
+     * Count inventory records where available quantity is below a given threshold
+     */
+    @Query("SELECT COUNT(i) FROM Inventory i WHERE i.availableQuantity < :threshold")
+    Long countLowStock(@Param("threshold") Integer threshold);
+
+    /**
+     * Count inventory records belonging to the brand warehouse (dealer is null)
+     */
+    Long countByDealerIsNull();
 }
