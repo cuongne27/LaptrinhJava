@@ -29,6 +29,13 @@ public class SupportTicket {
     @Column(name = "status", length = 50)
     private String status;
 
+    // THÊM 2 FIELDS NÀY
+    @Column(name = "priority", length = 20)
+    private String priority; // LOW, MEDIUM, HIGH, URGENT
+
+    @Column(name = "category", length = 50)
+    private String category; // WARRANTY, TECHNICAL, SALES, DELIVERY, MAINTENANCE, OTHER
+
     @Column(name = "createdAt")
     private OffsetDateTime createdAt;
 
