@@ -89,7 +89,7 @@ public class SecurityConfiguration {
                                         .requestMatchers("/api/auth/sign-up").hasRole("ADMIN")
 
                                         // ... (các đường dẫn khác)
-                                        .anyRequest().permitAll()
+                                        .anyRequest().authenticated()
 
                 )
                 .formLogin(AbstractHttpConfigurer::disable)
