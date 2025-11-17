@@ -2,13 +2,11 @@
 package com.evm.backend.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
-@Data
+@Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -19,11 +17,20 @@ public class SellInRequestDetails {
     @Column(name = "request_detail_id")
     private Long id;
 
-    @Column(name = "quantity")
-    private Integer quantity;
+    @Column(name = "requested_quantity") // Số lượng yêu cầu
+    private Integer requestedQuantity;
+
+    @Column(name = "approved_quantity") // Số lượng được duyệt
+    private Integer approvedQuantity;
+
+    @Column(name = "delivered_quantity") // Số lượng đã giao
+    private Integer deliveredQuantity;
 
     @Column(name = "color", length = 30)
     private String color;
+
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
 
     @ManyToOne
     @JoinColumn(name = "request_id")

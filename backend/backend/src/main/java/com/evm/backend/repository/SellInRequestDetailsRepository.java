@@ -24,7 +24,7 @@ public interface SellInRequestDetailsRepository extends JpaRepository<SellInRequ
     List<SellInRequestDetails> findByRequestAndProduct(@Param("requestId") Long requestId,
                                                        @Param("productId") Long productId);
 
-    @Query("SELECT SUM(sird.quantity) FROM SellInRequestDetails sird WHERE sird.product.id = :productId")
+    @Query("SELECT SUM(sird.requestedQuantity) FROM SellInRequestDetails sird WHERE sird.product.id = :productId")
     Integer getTotalRequestedQuantityByProduct(@Param("productId") Long productId);
 
     @Query("SELECT sird FROM SellInRequestDetails sird WHERE sird.sellInRequest.dealer.id = :dealerId AND sird.product.id = :productId")
