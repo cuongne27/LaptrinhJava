@@ -39,21 +39,48 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
     /**
      * Tìm orders với filter
      */
-    @Query("SELECT o FROM SalesOrder o WHERE " +
-            "(:customerId IS NULL OR o.customer.id = :customerId) AND " +
-            "(:salesPersonId IS NULL OR o.salesPerson.id = :salesPersonId) AND " +
-            "(:vehicleId IS NULL OR o.vehicle.id = :vehicleId) AND " +
-            "(:status IS NULL OR o.status = :status) AND " +
-            "(:fromDate IS NULL OR o.orderDate >= :fromDate) AND " +
-            "(:toDate IS NULL OR o.orderDate <= :toDate)")
-    Page<SalesOrder> findOrdersWithFilters(
+    // Repository
+    @Query("""
+    SELECT DISTINCT o FROM SalesOrder o
+    LEFT JOIN FETCH o.vehicle v
+    LEFT JOIN FETCH v.product p
+    LEFT JOIN FETCH p.brand b
+    LEFT JOIN FETCH o.customer c
+    LEFT JOIN FETCH o.salesPerson sp
+    WHERE (:customerId IS NULL OR o.customer.id = :customerId)
+    AND (:salesPersonId IS NULL OR o.salesPerson.id = :salesPersonId)
+    AND (:vehicleId IS NULL OR o.vehicle.id = :vehicleId)
+    AND (:status IS NULL OR o.status = :status)
+    AND (:fromDate IS NULL OR o.orderDate >= :fromDate)
+    AND (:toDate IS NULL OR o.orderDate <= :toDate)
+    ORDER BY o.orderDate DESC
+    """)
+    List<SalesOrder> findOrdersWithFilters(
             @Param("customerId") Long customerId,
             @Param("salesPersonId") Long salesPersonId,
             @Param("vehicleId") String vehicleId,
             @Param("status") String status,
             @Param("fromDate") LocalDate fromDate,
-            @Param("toDate") LocalDate toDate,
-            Pageable pageable
+            @Param("toDate") LocalDate toDate
+    );
+
+    // Count query riêng
+    @Query("""
+    SELECT COUNT(DISTINCT o.id) FROM SalesOrder o
+    WHERE (:customerId IS NULL OR o.customer.id = :customerId)
+    AND (:salesPersonId IS NULL OR o.salesPerson.id = :salesPersonId)
+    AND (:vehicleId IS NULL OR o.vehicle.id = :vehicleId)
+    AND (:status IS NULL OR o.status = :status)
+    AND (:fromDate IS NULL OR o.orderDate >= :fromDate)
+    AND (:toDate IS NULL OR o.orderDate <= :toDate)
+    """)
+    Long countOrdersWithFilters(
+            @Param("customerId") Long customerId,
+            @Param("salesPersonId") Long salesPersonId,
+            @Param("vehicleId") String vehicleId,
+            @Param("status") String status,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate
     );
 
     /**

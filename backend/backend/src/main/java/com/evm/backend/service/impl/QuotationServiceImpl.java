@@ -2,6 +2,7 @@ package com.evm.backend.service.impl;
 
 import com.evm.backend.dto.request.QuotationRequest;
 import com.evm.backend.dto.response.QuotationResponse;
+import com.evm.backend.dto.response.SalesOrderResponse;
 import com.evm.backend.entity.*;
 import com.evm.backend.exception.BadRequestException;
 import com.evm.backend.exception.ResourceNotFoundException;
@@ -18,7 +19,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,6 +38,7 @@ public class QuotationServiceImpl implements QuotationService {
     private final DealerRepository dealerRepository;
     private final PromotionRepository promotionRepository;
     private final SalesOrderRepository salesOrderRepository;
+    private final QuotationPromotionRepository quotationPromotionRepository; // ✅ Thêm
 
     private static final BigDecimal VAT_RATE = new BigDecimal("0.10"); // 10%
 
@@ -135,6 +140,7 @@ public class QuotationServiceImpl implements QuotationService {
     public QuotationResponse updateQuotation(Long id, QuotationRequest request) {
         log.info("Updating quotation: {}", id);
 
+        // 1. Load quotation (without promotions details for now)
         Quotation quotation = quotationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found"));
 
@@ -142,7 +148,7 @@ public class QuotationServiceImpl implements QuotationService {
             throw new BadRequestException("Chỉ có thể sửa báo giá ở trạng thái DRAFT");
         }
 
-        // Update fields
+        // 2. Update basic fields
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
         Customer customer = customerRepository.findById(request.getCustomerId())
@@ -157,33 +163,89 @@ public class QuotationServiceImpl implements QuotationService {
             quotation.setSalesPerson(salesPerson);
         }
 
-        // Recalculate prices
+        // 3. Update dates
+        if (request.getQuotationDate() != null) {
+            quotation.setQuotationDate(request.getQuotationDate());
+        }
+        if (request.getValidUntil() != null) {
+            quotation.setValidUntil(request.getValidUntil());
+        }
+
+        quotation.setNotes(request.getNotes());
+        quotation.setTermsAndConditions(request.getTermsAndConditions());
+
+        // 4. ✅ DELETE old promotions using repository (more reliable)
+        log.info("Deleting old promotions for quotation {}", id);
+        quotationPromotionRepository.deleteByQuotationId(id);
+        quotationPromotionRepository.flush();
+
+        // 5. Calculate prices
         BigDecimal basePrice = request.getBasePrice();
         BigDecimal vat = basePrice.multiply(VAT_RATE).setScale(2, RoundingMode.HALF_UP);
         BigDecimal registrationFee = request.getRegistrationFee() != null ?
                 request.getRegistrationFee() : BigDecimal.ZERO;
 
+        // 6. ✅ CREATE and SAVE new promotions one by one
         BigDecimal totalDiscount = BigDecimal.ZERO;
+        List<QuotationPromotion> newPromotions = new ArrayList<>();
+
         if (request.getPromotionIds() != null && !request.getPromotionIds().isEmpty()) {
-            totalDiscount = calculateTotalDiscount(basePrice, request.getPromotionIds());
+            log.info("Adding {} promotions to quotation {}", request.getPromotionIds().size(), id);
+
+            for (Long promotionId : request.getPromotionIds()) {
+                log.debug("Processing promotion ID: {}", promotionId);
+
+                Promotion promotion = promotionRepository.findById(promotionId)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Promotion not found: " + promotionId));
+
+                BigDecimal appliedAmount = calculatePromotionDiscount(basePrice, promotion);
+                totalDiscount = totalDiscount.add(appliedAmount);
+
+                QuotationPromotion qp = QuotationPromotion.builder()
+                        .quotation(quotation)
+                        .promotion(promotion)
+                        .appliedAmount(appliedAmount)
+                        .build();
+
+                newPromotions.add(qp);
+
+                log.debug("Created promotion: {} - {} with applied amount: {}",
+                        promotionId, promotion.getPromotionName(), appliedAmount);
+            }
         }
 
-        BigDecimal totalPrice = basePrice.add(vat).add(registrationFee).subtract(totalDiscount);
+        // 7. Calculate total price
+        BigDecimal totalPrice = basePrice
+                .add(vat)
+                .add(registrationFee)
+                .subtract(totalDiscount)
+                .setScale(2, RoundingMode.HALF_UP);
 
+        // 8. Update quotation prices
         quotation.setBasePrice(basePrice);
         quotation.setVat(vat);
         quotation.setRegistrationFee(registrationFee);
         quotation.setDiscountAmount(totalDiscount);
         quotation.setTotalPrice(totalPrice);
-        quotation.setNotes(request.getNotes());
-        quotation.setTermsAndConditions(request.getTermsAndConditions());
 
-        if (request.getValidUntil() != null) {
-            quotation.setValidUntil(request.getValidUntil());
+        // 9. Save quotation first
+        Quotation updated = quotationRepository.save(quotation);
+        log.info("Quotation {} saved", id);
+
+        // 10. ✅ Save all promotions at once
+        if (!newPromotions.isEmpty()) {
+            List<QuotationPromotion> savedPromotions = quotationPromotionRepository.saveAll(newPromotions);
+            log.info("Saved {} promotions for quotation {}", savedPromotions.size(), id);
         }
 
-        Quotation updated = quotationRepository.save(quotation);
-        log.info("Quotation updated: {}", id);
+        // 11. ✅ RELOAD quotation with promotions
+        updated = quotationRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Quotation not found after update"));
+
+        log.info("Quotation {} updated successfully with {} promotions",
+                id, updated.getQuotationPromotions().size());
+
         return convertToResponse(updated);
     }
 
@@ -252,17 +314,25 @@ public class QuotationServiceImpl implements QuotationService {
 
     @Override
     @Transactional
-    public QuotationResponse convertToOrder(Long id) {
+    public SalesOrderResponse convertToOrder(Long id) {
+        // Find quotation with all details
         Quotation quotation = quotationRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found"));
 
+        // Validation
         if (!"ACCEPTED".equals(quotation.getStatus())) {
-            throw new BadRequestException("Chỉ có thể chuyển báo giá đã được chấp nhận");
+            throw new BadRequestException("Chỉ có thể chuyển báo giá đã được chấp nhận thành đơn hàng");
         }
 
-//        if (quotation.getSalesOrder() != null) {
-//            throw new BadRequestException("Báo giá đã được chuyển thành đơn hàng");
-//        }
+        if (quotation.getSalesOrder() != null) {
+            throw new BadRequestException("Báo giá này đã được chuyển thành đơn hàng");
+        }
+
+        // Check if quotation is expired
+        if (quotation.getValidUntil() != null &&
+                quotation.getValidUntil().isBefore(LocalDate.now())) {
+            throw new BadRequestException("Báo giá đã hết hiệu lực");
+        }
 
         // Create sales order
         SalesOrder order = SalesOrder.builder()
@@ -272,21 +342,98 @@ public class QuotationServiceImpl implements QuotationService {
                 .registrationFee(quotation.getRegistrationFee())
                 .discountAmount(quotation.getDiscountAmount())
                 .totalPrice(quotation.getTotalPrice())
-                .status("PENDING")
-                .vehicle(null) // Chưa có VIN
+                .status("PENDING") // Đang chờ gán xe
+                .vehicle(null) // Chưa có xe cụ thể
                 .customer(quotation.getCustomer())
                 .salesPerson(quotation.getSalesPerson())
                 .build();
 
         SalesOrder savedOrder = salesOrderRepository.save(order);
+        log.info("Created order {} from quotation {}", savedOrder.getId(), quotation.getId());
 
-        // Update quotation status
+        // Copy promotions from quotation to order
+        if (quotation.getQuotationPromotions() != null &&
+                !quotation.getQuotationPromotions().isEmpty()) {
+
+            Set<OrderPromotions> orderPromotions = new HashSet<>();
+            for (QuotationPromotion qp : quotation.getQuotationPromotions()) {
+                OrderPromotions op = OrderPromotions.builder()
+                        .order(savedOrder)
+                        .promotion(qp.getPromotion())
+//                        .appliedAmount(qp.getAppliedAmount())
+                        .build();
+                orderPromotions.add(op);
+            }
+
+            if (!orderPromotions.isEmpty()) {
+                savedOrder.setOrderPromotions(orderPromotions);
+                savedOrder = salesOrderRepository.save(savedOrder);
+                log.info("Copied {} promotions to order {}",
+                        orderPromotions.size(), savedOrder.getId());
+            }
+        }
+
+        // Update quotation status and link to order
         quotation.setStatus("CONVERTED");
-//        quotation.setSalesOrder(savedOrder);
+        quotation.setSalesOrder(savedOrder);
         quotationRepository.save(quotation);
+        log.info("Updated quotation {} status to CONVERTED", quotation.getId());
 
-        log.info("Quotation converted to order: {} -> {}", id, savedOrder.getId());
-        return convertToResponse(quotation);
+        // Build and return response
+        return buildSalesOrderResponse(savedOrder, quotation);
+    }
+
+    /**
+     * Build SalesOrderResponse from SalesOrder and Quotation
+     */
+    private SalesOrderResponse buildSalesOrderResponse(SalesOrder order, Quotation quotation) {
+        // Calculate payment info
+        BigDecimal paidAmount = BigDecimal.ZERO;
+        if (order.getPayments() != null && !order.getPayments().isEmpty()) {
+            paidAmount = order.getPayments().stream()
+                    .filter(p -> "COMPLETED".equals(p.getStatus()))
+                    .map(Payment::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
+
+        BigDecimal remainingAmount = order.getTotalPrice().subtract(paidAmount);
+        boolean isPaid = remainingAmount.compareTo(BigDecimal.ZERO) <= 0;
+
+        // Calculate days from order
+        int daysFromOrder = (int) ChronoUnit.DAYS.between(order.getOrderDate(), LocalDate.now());
+
+        // Build message
+        String message = "Đơn hàng đã được tạo thành công từ báo giá " + quotation.getQuotationNumber() +
+                ". Vui lòng gán xe cho đơn hàng để tiếp tục.";
+
+        return SalesOrderResponse.builder()
+                .id(order.getId())
+                .orderDate(order.getOrderDate())
+                .totalPrice(order.getTotalPrice())
+                .status(order.getStatus())
+                // Vehicle info - null vì chưa gán xe
+                .vehicleId(null)
+                .vehicleModel(null)
+                .vehicleBrand(null)
+                .vehicleVin(null)
+                // Customer info
+                .customerId(order.getCustomer() != null ? order.getCustomer().getId() : null)
+                .customerName(order.getCustomer() != null ? order.getCustomer().getFullName() : null)
+                .customerPhone(order.getCustomer() != null ? order.getCustomer().getPhoneNumber() : null)
+                // Sales person info
+                .salesPersonId(order.getSalesPerson() != null ? order.getSalesPerson().getId() : null)
+                .salesPersonName(order.getSalesPerson() != null ? order.getSalesPerson().getFullName() : null)
+                // Quotation reference
+                .quotationId(quotation.getId())
+                .quotationNumber(quotation.getQuotationNumber())
+                // Calculated fields
+                .daysFromOrder(daysFromOrder)
+                .isPaid(isPaid)
+                .paidAmount(paidAmount)
+                .remainingAmount(remainingAmount)
+                // Message
+                .message(message)
+                .build();
     }
 
     @Override
@@ -411,9 +558,17 @@ public class QuotationServiceImpl implements QuotationService {
 
     private QuotationResponse convertToResponse(Quotation q) {
         LocalDate today = LocalDate.now();
-        boolean isExpired = q.getValidUntil().isBefore(today);
-        int daysUntilExpiry = (int) ChronoUnit.DAYS.between(today, q.getValidUntil());
-//        boolean canConvert = "ACCEPTED".equals(q.getStatus()) && !isExpired && q.getSalesOrder() == null;
+        LocalDate validUntilDate = q.getValidUntil();
+
+        boolean isExpired = (validUntilDate == null) || validUntilDate.isBefore(today);
+        int daysUntilExpiry = (validUntilDate != null)
+                ? (int) ChronoUnit.DAYS.between(today, validUntilDate)
+                : 0;
+
+        // ✅ Fix: Dùng getSalesOrder() thay vì getSalesOrderId()
+        boolean canConvert = "ACCEPTED".equals(q.getStatus())
+                && !isExpired
+                && q.getSalesOrder() == null; // ✅ Đổi từ getSalesOrderId()
 
         QuotationResponse.QuotationResponseBuilder builder = QuotationResponse.builder()
                 .id(q.getId())
@@ -431,8 +586,8 @@ public class QuotationServiceImpl implements QuotationService {
                 .createdAt(q.getCreatedAt())
                 .updatedAt(q.getUpdatedAt())
                 .isExpired(isExpired)
-                .daysUntilExpiry(daysUntilExpiry);
-//                .canConvertToOrder(canConvert);
+                .daysUntilExpiry(daysUntilExpiry)
+                .canConvertToOrder(canConvert);
 
         // Product
         if (q.getProduct() != null) {

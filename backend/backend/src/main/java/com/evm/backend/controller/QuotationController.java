@@ -2,6 +2,7 @@ package com.evm.backend.controller;
 
 import com.evm.backend.dto.request.QuotationRequest;
 import com.evm.backend.dto.response.QuotationResponse;
+import com.evm.backend.dto.response.SalesOrderResponse;
 import com.evm.backend.service.QuotationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -147,13 +148,13 @@ public class QuotationController {
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Chuyển báo giá thành đơn hàng",
             description = "Chuyển báo giá đã được chấp nhận thành đơn hàng chính thức")
-    public ResponseEntity<QuotationResponse> convertToOrder(
+    public ResponseEntity<SalesOrderResponse> convertToOrder(
             Authentication authentication,
             @PathVariable Long id
     ) {
-        log.info("REST request to convert quotation to order: {}", id);
-        QuotationResponse response = quotationService.convertToOrder(id);
-        return ResponseEntity.ok(response);
+        log.info("REST request to convert quotation {} to order", id);
+        SalesOrderResponse response = quotationService.convertToOrder(id);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/{id}/export-pdf")

@@ -10,20 +10,23 @@ import java.math.BigDecimal;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "quotation_promotion")
 public class QuotationPromotion {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "quotation_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "quotation_id", nullable = false)
     private Quotation quotation;
 
-    @ManyToOne
-    @JoinColumn(name = "promotion_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "promotion_id", nullable = false)
     private Promotion promotion;
 
     @Column(name = "applied_amount", precision = 15, scale = 2)
-    private BigDecimal appliedAmount; // Số tiền được giảm
+    private BigDecimal appliedAmount;
 }

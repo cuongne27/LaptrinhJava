@@ -14,37 +14,38 @@ import java.util.Set;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "quotation")
 public class Quotation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     @Column(name = "quotation_id")
     private Long id;
 
     @Column(name = "quotation_number", unique = true, length = 50)
-    private String quotationNumber; // Mã báo giá: QT-2024-00001
+    private String quotationNumber;
 
     @Column(name = "quotation_date")
     private LocalDate quotationDate;
 
     @Column(name = "valid_until")
-    private LocalDate validUntil; // Hiệu lực đến ngày
+    private LocalDate validUntil;
 
-    // Giá thành phần
     @Column(name = "base_price", precision = 15, scale = 2)
-    private BigDecimal basePrice; // Giá xe cơ bản
+    private BigDecimal basePrice;
 
     @Column(name = "vat", precision = 15, scale = 2)
-    private BigDecimal vat; // VAT (10%)
+    private BigDecimal vat;
 
     @Column(name = "registration_fee", precision = 15, scale = 2)
-    private BigDecimal registrationFee; // Phí trước bạ
+    private BigDecimal registrationFee;
 
     @Column(name = "discount_amount", precision = 15, scale = 2)
-    private BigDecimal discountAmount; // Giảm giá
+    private BigDecimal discountAmount;
 
     @Column(name = "total_price", precision = 15, scale = 2)
-    private BigDecimal totalPrice; // Tổng giá
+    private BigDecimal totalPrice;
 
     @Column(name = "status", length = 50)
     private String status; // DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED, CONVERTED
@@ -78,12 +79,18 @@ public class Quotation {
     @JoinColumn(name = "dealer_id")
     private Dealer dealer;
 
-    @OneToMany(mappedBy = "quotation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(
+            mappedBy = "quotation",
+            cascade = CascadeType.ALL,  // ✅ Đảm bảo có ALL
+            orphanRemoval = true,       // ✅ Đảm bảo có orphanRemoval
+            fetch = FetchType.LAZY      // ✅ LAZY fetch
+    )
     @Builder.Default
     private Set<QuotationPromotion> quotationPromotions = new HashSet<>();
 
-    @Column(name = "sales_order_id")
-    private Long salesOrderId;
+    @ManyToOne
+    @JoinColumn(name = "sales_order_id")
+    private SalesOrder salesOrder;
 
     @PrePersist
     protected void onCreate() {
@@ -93,7 +100,7 @@ public class Quotation {
             quotationDate = LocalDate.now();
         }
         if (validUntil == null) {
-            validUntil = quotationDate.plusDays(30); // Mặc định hiệu lực 30 ngày
+            validUntil = quotationDate.plusDays(30);
         }
     }
 

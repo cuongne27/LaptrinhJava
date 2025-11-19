@@ -1,5 +1,6 @@
 package com.evm.backend.controller;
 
+import com.evm.backend.dto.request.AssignVehicleRequest;
 import com.evm.backend.dto.request.SalesOrderFilterRequest;
 import com.evm.backend.dto.request.SalesOrderRequest;
 import com.evm.backend.dto.response.SalesOrderDetailResponse;
@@ -142,5 +143,41 @@ public class SalesOrderCrudController {
             @RequestParam int month
     ) {
         return ResponseEntity.ok(salesOrderService.getMonthlySales(year, month));
+    }
+
+    @PutMapping("/{orderId}/assign-vehicle")
+    @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
+    @Operation(
+            summary = "Gán xe cho đơn hàng",
+            description = "Gán xe cụ thể (VIN) cho đơn hàng đang ở trạng thái PENDING. " +
+                    "Sau khi gán xe thành công, trạng thái đơn hàng chuyển sang CONFIRMED."
+    )
+    public ResponseEntity<SalesOrderDetailResponse> assignVehicle(
+            Authentication authentication,
+            @PathVariable Long orderId,
+            @Valid @RequestBody AssignVehicleRequest request
+    ) {
+        log.info("REST request to assign vehicle {} to order {}",
+                request.getVehicleId(), orderId);
+
+        SalesOrderDetailResponse response = salesOrderService.assignVehicle(orderId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{orderId}/vehicle")
+    @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
+    @Operation(
+            summary = "Hủy gán xe",
+            description = "Hủy gán xe cho đơn hàng. Trạng thái đơn hàng chuyển về PENDING, " +
+                    "xe chuyển về AVAILABLE."
+    )
+    public ResponseEntity<SalesOrderDetailResponse> unassignVehicle(
+            Authentication authentication,
+            @PathVariable Long orderId
+    ) {
+        log.info("REST request to unassign vehicle from order {}", orderId);
+
+        SalesOrderDetailResponse response = salesOrderService.unassignVehicle(orderId);
+        return ResponseEntity.ok(response);
     }
 }

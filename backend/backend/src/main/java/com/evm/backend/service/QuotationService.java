@@ -2,6 +2,7 @@ package com.evm.backend.service;
 
 import com.evm.backend.dto.request.QuotationRequest;
 import com.evm.backend.dto.response.QuotationResponse;
+import com.evm.backend.dto.response.SalesOrderResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
@@ -27,7 +28,7 @@ public interface QuotationService {
 
     QuotationResponse rejectQuotation(Long id); // Khách từ chối
 
-    QuotationResponse convertToOrder(Long id); // Chuyển thành Order
+    SalesOrderResponse convertToOrder(Long id);
 
     byte[] exportQuotationToPdf(Long id); // Xuất PDF
 

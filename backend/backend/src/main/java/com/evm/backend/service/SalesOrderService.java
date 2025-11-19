@@ -1,5 +1,6 @@
 package com.evm.backend.service;
 
+import com.evm.backend.dto.request.AssignVehicleRequest;
 import com.evm.backend.dto.request.SalesOrderFilterRequest;
 import com.evm.backend.dto.request.SalesOrderRequest;
 import com.evm.backend.dto.response.SalesOrderDetailResponse;
@@ -59,4 +60,14 @@ public interface SalesOrderService {
      * Lấy báo cáo doanh số theo tháng
      */
     List<SalesOrderListResponse> getMonthlySales(int year, int month);
+
+    /**
+     * Gán xe cụ thể cho đơn hàng
+     */
+    SalesOrderDetailResponse assignVehicle(Long orderId, AssignVehicleRequest request);
+
+    /**
+     * Hủy gán xe
+     */
+    SalesOrderDetailResponse unassignVehicle(Long orderId);
 }
