@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DealerContractRepository extends JpaRepository<DealerContract, Long> {
@@ -109,4 +110,22 @@ public interface DealerContractRepository extends JpaRepository<DealerContract, 
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate
     );
+    /**
+     * Get active contract for dealer
+     */
+    @Query("SELECT dc FROM DealerContract dc " +
+            "WHERE dc.dealer.id = :dealerId " +
+            "AND :date BETWEEN dc.startDate AND dc.endDate " +
+            "ORDER BY dc.startDate DESC")
+    Optional<DealerContract> findActiveContract(
+            @Param("dealerId") Long dealerId,
+            @Param("date") LocalDate date
+    );
+
+    /**
+     * Get all active contracts
+     */
+    @Query("SELECT dc FROM DealerContract dc " +
+            "WHERE :date BETWEEN dc.startDate AND dc.endDate")
+    java.util.List<DealerContract> findAllActiveContracts(@Param("date") LocalDate date);
 }

@@ -36,7 +36,7 @@ public class Inventory {
     @Column(name = "available_quantity", nullable = false)
     private Integer availableQuantity;
 
-    @Column(name = "inTransit_quantity", nullable = false)
+    @Column(name = "in_transit_quantity", nullable = false)
     private Integer inTransitQuantity;
 
     @Column(name = "location", length = 100)
