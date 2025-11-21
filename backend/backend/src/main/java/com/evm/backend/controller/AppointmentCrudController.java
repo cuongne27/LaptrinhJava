@@ -21,7 +21,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/appointments")
+@RequestMapping("/api/appointments") // <<< MODULE: QUẢN LÝ LỊCH HẸN (APPOINTMENT MANAGEMENT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Appointment Management", description = "APIs quản lý lịch hẹn")
@@ -29,6 +29,9 @@ public class AppointmentCrudController {
 
     private final AppointmentService appointmentService;
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH LỊCH HẸN (CÓ FILTER/PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/appointments
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy danh sách lịch hẹn")
@@ -51,6 +54,9 @@ public class AppointmentCrudController {
         return ResponseEntity.ok(appointmentService.getAllAppointments(req));
     }
 
+    // <<< CHỨC NĂNG: LẤY LỊCH HẸN SẮP TỚI
+    // <<< ĐẦU API: GET /api/appointments/upcoming
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/upcoming")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy lịch hẹn sắp tới")
@@ -58,6 +64,9 @@ public class AppointmentCrudController {
         return ResponseEntity.ok(appointmentService.getUpcomingAppointments());
     }
 
+    // <<< CHỨC NĂNG: LẤY LỊCH HẸN HÔM NAY
+    // <<< ĐẦU API: GET /api/appointments/today
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/today")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy lịch hẹn hôm nay")
@@ -65,6 +74,9 @@ public class AppointmentCrudController {
         return ResponseEntity.ok(appointmentService.getTodayAppointments());
     }
 
+    // <<< CHỨC NĂNG: XEM CHI TIẾT LỊCH HẸN THEO ID
+    // <<< ĐẦU API: GET /api/appointments/{appointmentId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN, CUSTOMER
     @GetMapping("/{appointmentId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN', 'CUSTOMER')")
     @Operation(summary = "Xem chi tiết lịch hẹn")
@@ -72,6 +84,9 @@ public class AppointmentCrudController {
         return ResponseEntity.ok(appointmentService.getAppointmentById(appointmentId));
     }
 
+    // <<< CHỨC NĂNG: TẠO LỊCH HẸN MỚI
+    // <<< ĐẦU API: POST /api/appointments
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PostMapping
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Tạo lịch hẹn mới")
@@ -83,6 +98,9 @@ public class AppointmentCrudController {
                 .body(appointmentService.createAppointment(request));
     }
 
+    // <<< CHỨC NĂNG: CẬP NHẬT LỊCH HẸN
+    // <<< ĐẦU API: PUT /api/appointments/{appointmentId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PutMapping("/{appointmentId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Cập nhật lịch hẹn")
@@ -94,6 +112,9 @@ public class AppointmentCrudController {
         return ResponseEntity.ok(appointmentService.updateAppointment(appointmentId, request));
     }
 
+    // <<< CHỨC NĂNG: HỦY LỊCH HẸN
+    // <<< ĐẦU API: PATCH /api/appointments/{appointmentId}/cancel
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN, CUSTOMER
     @PatchMapping("/{appointmentId}/cancel")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN', 'CUSTOMER')")
     @Operation(summary = "Hủy lịch hẹn")
@@ -105,6 +126,9 @@ public class AppointmentCrudController {
         return ResponseEntity.noContent().build();
     }
 
+    // <<< CHỨC NĂNG: XÓA LỊCH HẸN (ADMIN ONLY)
+    // <<< ĐẦU API: DELETE /api/appointments/{appointmentId}
+    // <<< VAI TRÒ: ADMIN
     @DeleteMapping("/{appointmentId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa lịch hẹn")

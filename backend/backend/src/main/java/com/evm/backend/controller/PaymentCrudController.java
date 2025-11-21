@@ -28,7 +28,7 @@ import java.util.List;
  * CRUD operations for Payment entity
  */
 @RestController
-@RequestMapping("/api/payments")
+@RequestMapping("/api/payments") // <<< MODULE: QUẢN LÝ THANH TOÁN (PAYMENT MANAGEMENT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Payment Management", description = "APIs quản lý thanh toán đơn hàng xe điện")
@@ -40,6 +40,9 @@ public class PaymentCrudController {
      * GET: Lấy danh sách payments với filter
      * Endpoint: GET /api/payments
      */
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH THANH TOÁN (CÓ FILTER VÀ PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/payments
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -88,6 +91,9 @@ public class PaymentCrudController {
      * GET: Lấy payments theo order ID
      * Endpoint: GET /api/payments/order/{orderId}
      */
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH THANH TOÁN THEO ĐƠN HÀNG (ORDER ID)
+    // <<< ĐẦU API: GET /api/payments/order/{orderId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN, CUSTOMER
     @GetMapping("/order/{orderId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN', 'CUSTOMER')")
     @Operation(summary = "Lấy danh sách thanh toán theo đơn hàng")
@@ -107,6 +113,9 @@ public class PaymentCrudController {
      * GET: Lấy payments theo customer ID
      * Endpoint: GET /api/payments/customer/{customerId}
      */
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH THANH TOÁN THEO KHÁCH HÀNG
+    // <<< ĐẦU API: GET /api/payments/customer/{customerId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/customer/{customerId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy danh sách thanh toán theo khách hàng")
@@ -126,6 +135,9 @@ public class PaymentCrudController {
      * GET: Lấy payments đang chờ xử lý
      * Endpoint: GET /api/payments/pending
      */
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH THANH TOÁN ĐANG CHỜ XỬ LÝ (PENDING)
+    // <<< ĐẦU API: GET /api/payments/pending
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/pending")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy danh sách thanh toán đang chờ xử lý")
@@ -142,6 +154,9 @@ public class PaymentCrudController {
      * GET: Xem chi tiết payment
      * Endpoint: GET /api/payments/{paymentId}
      */
+    // <<< CHỨC NĂNG: XEM CHI TIẾT THANH TOÁN
+    // <<< ĐẦU API: GET /api/payments/{paymentId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN, CUSTOMER
     @GetMapping("/{paymentId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN', 'CUSTOMER')")
     @Operation(summary = "Xem chi tiết thanh toán")
@@ -161,6 +176,9 @@ public class PaymentCrudController {
      * GET: Tìm payment theo reference number
      * Endpoint: GET /api/payments/reference/{referenceNumber}
      */
+    // <<< CHỨC NĂNG: TÌM THANH TOÁN THEO MÃ THAM CHIẾU (REFERENCE NUMBER)
+    // <<< ĐẦU API: GET /api/payments/reference/{referenceNumber}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/reference/{referenceNumber}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Tìm thanh toán theo mã tham chiếu")
@@ -180,6 +198,9 @@ public class PaymentCrudController {
      * POST: Tạo payment mới
      * Endpoint: POST /api/payments
      */
+    // <<< CHỨC NĂNG: TẠO BẢN GHI THANH TOÁN MỚI
+    // <<< ĐẦU API: POST /api/payments
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PostMapping
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Tạo thanh toán mới")
@@ -202,6 +223,9 @@ public class PaymentCrudController {
      * PUT: Cập nhật payment
      * Endpoint: PUT /api/payments/{paymentId}
      */
+    // <<< CHỨC NĂNG: CẬP NHẬT THÔNG TIN THANH TOÁN
+    // <<< ĐẦU API: PUT /api/payments/{paymentId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PutMapping("/{paymentId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Cập nhật thanh toán")
@@ -225,6 +249,9 @@ public class PaymentCrudController {
      * PATCH: Xác nhận thanh toán
      * Endpoint: PATCH /api/payments/{paymentId}/confirm
      */
+    // <<< CHỨC NĂNG: XÁC NHẬN THANH TOÁN (CHUYỂN TRẠNG THÁI)
+    // <<< ĐẦU API: PATCH /api/payments/{paymentId}/confirm
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PatchMapping("/{paymentId}/confirm")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Xác nhận thanh toán")
@@ -246,6 +273,9 @@ public class PaymentCrudController {
      * PATCH: Hoàn tiền
      * Endpoint: PATCH /api/payments/{paymentId}/refund
      */
+    // <<< CHỨC NĂNG: HOÀN TIỀN THANH TOÁN
+    // <<< ĐẦU API: PATCH /api/payments/{paymentId}/refund
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PatchMapping("/{paymentId}/refund")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Hoàn tiền thanh toán")
@@ -268,6 +298,9 @@ public class PaymentCrudController {
      * DELETE: Xóa payment
      * Endpoint: DELETE /api/payments/{paymentId}
      */
+    // <<< CHỨC NĂNG: XÓA BẢN GHI THANH TOÁN
+    // <<< ĐẦU API: DELETE /api/payments/{paymentId}
+    // <<< VAI TRÒ: ADMIN
     @DeleteMapping("/{paymentId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa thanh toán (chỉ ADMIN)")

@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/auth") // <<< MODULE: XÁC THỰC VÀ ĐĂNG KÝ (AUTHENTICATION)
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthController {
@@ -40,7 +40,9 @@ public class AuthController {
     PasswordEncoder encoder;
     JwtTokenProvider tokenProvider;
 
-    //ĐĂNG NHẬP
+    // <<< CHỨC NĂNG: ĐĂNG NHẬP HỆ THỐNG
+    // <<< ĐẦU API: POST /api/auth/login
+    // <<< VAI TRÒ: PUBLIC (Không yêu cầu xác thực)
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         // Xác thực từ username, password
@@ -78,7 +80,9 @@ public class AuthController {
         ));
     }
 
-    //ĐĂNG KÝ TÀI KHOẢN
+    // <<< CHỨC NĂNG: ĐĂNG KÝ TÀI KHOẢN MỚI
+    // <<< ĐẦU API: POST /api/auth/sign-up
+    // <<< VAI TRÒ: PUBLIC (Không yêu cầu xác thực)
     @PostMapping("/sign-up")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
         // Kiểm tra username đã tồn tại chưa

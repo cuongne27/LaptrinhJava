@@ -24,7 +24,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/vehicles")
+@RequestMapping("/api/vehicles") // <<< MODULE: QUẢN LÝ XE (INVENTORY)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Vehicle Management", description = "APIs quản lý xe (inventory)")
@@ -32,6 +32,9 @@ public class VehicleCrudController {
 
     private final VehicleService vehicleService;
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH XE (CÓ FILTER VÀ PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/vehicles
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy danh sách xe", description = "Lấy danh sách xe với filter và phân trang")
@@ -60,6 +63,9 @@ public class VehicleCrudController {
         return ResponseEntity.ok(vehicleService.getAllVehicles(filterRequest));
     }
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH XE THEO PRODUCT
+    // <<< ĐẦU API: GET /api/vehicles/product/{productId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/product/{productId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy xe theo product")
@@ -67,6 +73,9 @@ public class VehicleCrudController {
         return ResponseEntity.ok(vehicleService.getVehiclesByProduct(productId));
     }
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH XE THEO DEALER
+    // <<< ĐẦU API: GET /api/vehicles/dealer/{dealerId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/dealer/{dealerId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy xe theo dealer")
@@ -74,6 +83,9 @@ public class VehicleCrudController {
         return ResponseEntity.ok(vehicleService.getVehiclesByDealer(dealerId));
     }
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH XE ĐANG AVAILABLE CỦA DEALER
+    // <<< ĐẦU API: GET /api/vehicles/dealer/{dealerId}/available
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/dealer/{dealerId}/available")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy xe available của dealer")
@@ -81,6 +93,9 @@ public class VehicleCrudController {
         return ResponseEntity.ok(vehicleService.getAvailableVehiclesByDealer(dealerId));
     }
 
+    // <<< CHỨC NĂNG: XEM CHI TIẾT XE THEO ID
+    // <<< ĐẦU API: GET /api/vehicles/{vehicleId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/{vehicleId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Xem chi tiết xe")
@@ -88,6 +103,9 @@ public class VehicleCrudController {
         return ResponseEntity.ok(vehicleService.getVehicleById(vehicleId));
     }
 
+    // <<< CHỨC NĂNG: TÌM XE THEO VIN
+    // <<< ĐẦU API: GET /api/vehicles/vin/{vin}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/vin/{vin}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Tìm xe theo VIN")
@@ -95,6 +113,9 @@ public class VehicleCrudController {
         return ResponseEntity.ok(vehicleService.getVehicleByVin(vin));
     }
 
+    // <<< CHỨC NĂNG: TẠO XE MỚI
+    // <<< ĐẦU API: POST /api/vehicles
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PostMapping
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Tạo xe mới")
@@ -109,6 +130,9 @@ public class VehicleCrudController {
         return ResponseEntity.status(HttpStatus.CREATED).body(vehicleService.createVehicle(request));
     }
 
+    // <<< CHỨC NĂNG: CẬP NHẬT THÔNG TIN XE
+    // <<< ĐẦU API: PUT /api/vehicles/{vehicleId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PutMapping("/{vehicleId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Cập nhật xe")
@@ -120,6 +144,9 @@ public class VehicleCrudController {
         return ResponseEntity.ok(vehicleService.updateVehicle(vehicleId, request));
     }
 
+    // <<< CHỨC NĂNG: XÓA XE
+    // <<< ĐẦU API: DELETE /api/vehicles/{vehicleId}
+    // <<< VAI TRÒ: ADMIN
     @DeleteMapping("/{vehicleId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa xe")

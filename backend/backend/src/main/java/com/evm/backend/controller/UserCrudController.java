@@ -27,7 +27,7 @@ import java.util.List;
  * Only ADMIN can perform these operations
  */
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/users") // <<< MODULE: QUẢN LÝ NHÂN VIÊN (STAFF/EMPLOYEE MANAGEMENT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "User Management", description = "APIs quản lý nhân viên (chỉ ADMIN)")
@@ -35,10 +35,9 @@ public class UserCrudController {
 
     private final UserService userService;
 
-    /**
-     * GET: Lấy danh sách users với filter
-     * Endpoint: GET /api/users
-     */
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH NHÂN VIÊN (CÓ FILTER VÀ PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/users
+    // <<< VAI TRÒ: ADMIN
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
@@ -79,10 +78,9 @@ public class UserCrudController {
         return ResponseEntity.ok(users);
     }
 
-    /**
-     * GET: Lấy users theo role
-     * Endpoint: GET /api/users/role/{roleName}
-     */
+    // <<< CHỨC NĂNG: LẤY NHÂN VIÊN THEO ROLE
+    // <<< ĐẦU API: GET /api/users/role/{roleName}
+    // <<< VAI TRÒ: ADMIN
     @GetMapping("/role/{roleName}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Lấy danh sách nhân viên theo role")
@@ -98,10 +96,9 @@ public class UserCrudController {
         return ResponseEntity.ok(users);
     }
 
-    /**
-     * GET: Lấy users theo brand
-     * Endpoint: GET /api/users/brand/{brandId}
-     */
+    // <<< CHỨC NĂNG: LẤY NHÂN VIÊN THEO BRAND
+    // <<< ĐẦU API: GET /api/users/brand/{brandId}
+    // <<< VAI TRÒ: ADMIN
     @GetMapping("/brand/{brandId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Lấy danh sách nhân viên theo brand")
@@ -117,10 +114,9 @@ public class UserCrudController {
         return ResponseEntity.ok(users);
     }
 
-    /**
-     * GET: Lấy users theo dealer
-     * Endpoint: GET /api/users/dealer/{dealerId}
-     */
+    // <<< CHỨC NĂNG: LẤY NHÂN VIÊN THEO DEALER
+    // <<< ĐẦU API: GET /api/users/dealer/{dealerId}
+    // <<< VAI TRÒ: ADMIN
     @GetMapping("/dealer/{dealerId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Lấy danh sách nhân viên theo dealer")
@@ -136,10 +132,9 @@ public class UserCrudController {
         return ResponseEntity.ok(users);
     }
 
-    /**
-     * GET: Lấy users active
-     * Endpoint: GET /api/users/active
-     */
+    // <<< CHỨC NĂNG: LẤY NHÂN VIÊN ĐANG HOẠT ĐỘNG
+    // <<< ĐẦU API: GET /api/users/active
+    // <<< VAI TRÒ: ADMIN
     @GetMapping("/active")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Lấy danh sách nhân viên đang hoạt động")
@@ -152,10 +147,9 @@ public class UserCrudController {
         return ResponseEntity.ok(users);
     }
 
-    /**
-     * GET: Lấy users inactive
-     * Endpoint: GET /api/users/inactive
-     */
+    // <<< CHỨC NĂNG: LẤY NHÂN VIÊN ĐÃ NGƯNG HOẠT ĐỘNG
+    // <<< ĐẦU API: GET /api/users/inactive
+    // <<< VAI TRÒ: ADMIN
     @GetMapping("/inactive")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Lấy danh sách nhân viên đã ngưng hoạt động")
@@ -168,10 +162,9 @@ public class UserCrudController {
         return ResponseEntity.ok(users);
     }
 
-    /**
-     * GET: Xem chi tiết user
-     * Endpoint: GET /api/users/{userId}
-     */
+    // <<< CHỨC NĂNG: XEM CHI TIẾT NHÂN VIÊN
+    // <<< ĐẦU API: GET /api/users/{userId}
+    // <<< VAI TRÒ: ADMIN
     @GetMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xem chi tiết nhân viên")
@@ -187,10 +180,9 @@ public class UserCrudController {
         return ResponseEntity.ok(user);
     }
 
-    /**
-     * GET: Tìm user theo username
-     * Endpoint: GET /api/users/username/{username}
-     */
+    // <<< CHỨC NĂNG: TÌM NHÂN VIÊN THEO USERNAME
+    // <<< ĐẦU API: GET /api/users/username/{username}
+    // <<< VAI TRÒ: ADMIN
     @GetMapping("/username/{username}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Tìm nhân viên theo username")
@@ -206,10 +198,9 @@ public class UserCrudController {
         return ResponseEntity.ok(user);
     }
 
-    /**
-     * POST: Tạo user mới (Admin tạo tài khoản cho nhân viên)
-     * Endpoint: POST /api/users
-     */
+    // <<< CHỨC NĂNG: TẠO TÀI KHOẢN NHÂN VIÊN MỚI
+    // <<< ĐẦU API: POST /api/users
+    // <<< VAI TRÒ: ADMIN
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
@@ -231,10 +222,9 @@ public class UserCrudController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
     }
 
-    /**
-     * PUT: Cập nhật user
-     * Endpoint: PUT /api/users/{userId}
-     */
+    // <<< CHỨC NĂNG: CẬP NHẬT THÔNG TIN NHÂN VIÊN
+    // <<< ĐẦU API: PUT /api/users/{userId}
+    // <<< VAI TRÒ: ADMIN
     @PutMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Cập nhật thông tin nhân viên")
@@ -254,10 +244,9 @@ public class UserCrudController {
         return ResponseEntity.ok(updatedUser);
     }
 
-    /**
-     * PATCH: Kích hoạt tài khoản
-     * Endpoint: PATCH /api/users/{userId}/activate
-     */
+    // <<< CHỨC NĂNG: KÍCH HOẠT TÀI KHOẢN
+    // <<< ĐẦU API: PATCH /api/users/{userId}/activate
+    // <<< VAI TRÒ: ADMIN
     @PatchMapping("/{userId}/activate")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Kích hoạt tài khoản nhân viên")
@@ -274,10 +263,9 @@ public class UserCrudController {
         return ResponseEntity.ok(activatedUser);
     }
 
-    /**
-     * PATCH: Vô hiệu hóa tài khoản
-     * Endpoint: PATCH /api/users/{userId}/deactivate
-     */
+    // <<< CHỨC NĂNG: VÔ HIỆU HÓA TÀI KHOẢN
+    // <<< ĐẦU API: PATCH /api/users/{userId}/deactivate
+    // <<< VAI TRÒ: ADMIN
     @PatchMapping("/{userId}/deactivate")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Vô hiệu hóa tài khoản nhân viên")
@@ -294,10 +282,9 @@ public class UserCrudController {
         return ResponseEntity.ok(deactivatedUser);
     }
 
-    /**
-     * PATCH: Reset mật khẩu
-     * Endpoint: PATCH /api/users/{userId}/reset-password
-     */
+    // <<< CHỨC NĂNG: RESET MẬT KHẨU
+    // <<< ĐẦU API: PATCH /api/users/{userId}/reset-password?newPassword={newPassword}
+    // <<< VAI TRÒ: ADMIN
     @PatchMapping("/{userId}/reset-password")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Reset mật khẩu nhân viên")
@@ -315,10 +302,9 @@ public class UserCrudController {
         return ResponseEntity.ok(user);
     }
 
-    /**
-     * DELETE: Xóa user (soft delete)
-     * Endpoint: DELETE /api/users/{userId}
-     */
+    // <<< CHỨC NĂNG: XÓA NHÂN VIÊN (SOFT DELETE)
+    // <<< ĐẦU API: DELETE /api/users/{userId}
+    // <<< VAI TRÒ: ADMIN
     @DeleteMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa nhân viên (soft delete)")

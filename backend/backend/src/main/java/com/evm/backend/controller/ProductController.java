@@ -24,7 +24,7 @@ import java.math.BigDecimal;
  * UC-DL-01: Xem danh mục và thông tin chi tiết xe
  */
 @RestController
-@RequestMapping("/api/dealer/products")
+@RequestMapping("/api/dealer/products") // <<< MODULE: DANH MỤC SẢN PHẨM (DEALER CATALOG VIEW)
 @RequiredArgsConstructor
 @Tag(name = "Dealer Product Catalog", description = "APIs for dealer staff to view product catalog")
 @SecurityRequirement(name = "bearerAuth")
@@ -36,6 +36,9 @@ public class ProductController {
      * UC-DL-01: Xem danh mục xe với filter và search
      * GET /api/dealer/products
      */
+    // <<< CHỨC NĂNG: XEM DANH MỤC SẢN PHẨM (CÓ LỌC, TÌM KIẾM, PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/dealer/products
+    // <<< VAI TRÒ: DEALER_STAFF, ADMIN
     @GetMapping
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'ADMIN')")
     @Operation(
@@ -93,6 +96,9 @@ public class ProductController {
      * UC-DL-01: Xem chi tiết sản phẩm
      * GET /api/dealer/products/{productId}
      */
+    // <<< CHỨC NĂNG: XEM CHI TIẾT THÔNG TIN SẢN PHẨM
+    // <<< ĐẦU API: GET /api/dealer/products/{productId}
+    // <<< VAI TRÒ: DEALER_STAFF, ADMIN
     @GetMapping("/{productId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'ADMIN')")
     @Operation(
@@ -123,6 +129,9 @@ public class ProductController {
      * Alternative endpoint: Search products using POST method
      * POST /api/dealer/products/search
      */
+    // <<< CHỨC NĂNG: TÌM KIẾM SẢN PHẨM SỬ DỤNG PHƯƠNG THỨC POST (DÙNG REQUEST BODY)
+    // <<< ĐẦU API: POST /api/dealer/products/search
+    // <<< VAI TRÒ: DEALER_STAFF, ADMIN
     @PostMapping("/search")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'ADMIN')")
     @Operation(

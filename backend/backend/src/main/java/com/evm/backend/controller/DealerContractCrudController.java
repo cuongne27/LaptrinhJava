@@ -29,7 +29,7 @@ import java.util.List;
  * CRUD operations for DealerContract entity
  */
 @RestController
-@RequestMapping("/api/contracts")
+@RequestMapping("/api/contracts") // <<< MODULE: QUẢN LÝ HỢP ĐỒNG ĐẠI LÝ (DEALER CONTRACT MANAGEMENT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Dealer Contract Management", description = "APIs quản lý hợp đồng đại lý")
@@ -37,10 +37,9 @@ public class DealerContractCrudController {
 
     private final DealerContractService contractService;
 
-    /**
-     * GET: Lấy danh sách contracts với filter
-     * Endpoint: GET /api/contracts
-     */
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH HỢP ĐỒNG (CÓ FILTER VÀ PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/contracts
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -96,10 +95,9 @@ public class DealerContractCrudController {
         return ResponseEntity.ok(contracts);
     }
 
-    /**
-     * GET: Lấy contracts của dealer
-     * Endpoint: GET /api/contracts/dealer/{dealerId}
-     */
+    // <<< CHỨC NĂNG: LẤY HỢP ĐỒNG THEO DEALER
+    // <<< ĐẦU API: GET /api/contracts/dealer/{dealerId}
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN, DEALER_STAFF
     @GetMapping("/dealer/{dealerId}")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN', 'DEALER_STAFF')")
     @Operation(
@@ -123,10 +121,9 @@ public class DealerContractCrudController {
         return ResponseEntity.ok(contracts);
     }
 
-    /**
-     * GET: Lấy contracts của brand
-     * Endpoint: GET /api/contracts/brand/{brandId}
-     */
+    // <<< CHỨC NĂNG: LẤY HỢP ĐỒNG THEO BRAND
+    // <<< ĐẦU API: GET /api/contracts/brand/{brandId}
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/brand/{brandId}")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -150,10 +147,9 @@ public class DealerContractCrudController {
         return ResponseEntity.ok(contracts);
     }
 
-    /**
-     * GET: Xem chi tiết contract
-     * Endpoint: GET /api/contracts/{contractId}
-     */
+    // <<< CHỨC NĂNG: XEM CHI TIẾT HỢP ĐỒNG
+    // <<< ĐẦU API: GET /api/contracts/{contractId}
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN, DEALER_STAFF
     @GetMapping("/{contractId}")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN', 'DEALER_STAFF')")
     @Operation(
@@ -177,10 +173,9 @@ public class DealerContractCrudController {
         return ResponseEntity.ok(contract);
     }
 
-    /**
-     * POST: Tạo contract mới
-     * Endpoint: POST /api/contracts/create
-     */
+    // <<< CHỨC NĂNG: TẠO HỢP ĐỒNG MỚI
+    // <<< ĐẦU API: POST /api/contracts/create
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PostMapping("/create")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -207,10 +202,9 @@ public class DealerContractCrudController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdContract);
     }
 
-    /**
-     * PUT: Cập nhật contract
-     * Endpoint: PUT /api/contracts/update/{contractId}
-     */
+    // <<< CHỨC NĂNG: CẬP NHẬT HỢP ĐỒNG
+    // <<< ĐẦU API: PUT /api/contracts/update/{contractId}
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PutMapping("/update/{contractId}")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -239,10 +233,9 @@ public class DealerContractCrudController {
         return ResponseEntity.ok(updatedContract);
     }
 
-    /**
-     * DELETE: Xóa contract
-     * Endpoint: DELETE /api/contracts/{contractId}
-     */
+    // <<< CHỨC NĂNG: XÓA HỢP ĐỒNG (ADMIN ONLY)
+    // <<< ĐẦU API: DELETE /api/contracts/{contractId}
+    // <<< VAI TRÒ: ADMIN
     @DeleteMapping("/{contractId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(

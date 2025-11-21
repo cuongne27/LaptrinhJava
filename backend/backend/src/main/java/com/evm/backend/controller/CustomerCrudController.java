@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
  * CRUD operations for Customer entity
  */
 @RestController
-@RequestMapping("/api/customers")
+@RequestMapping("/api/customers") // <<< MODULE: QUẢN LÝ KHÁCH HÀNG (CUSTOMER MANAGEMENT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Customer Management", description = "APIs quản lý khách hàng")
@@ -32,10 +32,9 @@ public class CustomerCrudController {
 
     private final CustomerService customerService;
 
-    /**
-     * GET: Lấy danh sách customers với filter
-     * Endpoint: GET /api/customers
-     */
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH KHÁCH HÀNG (CÓ FILTER VÀ PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/customers
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -78,10 +77,9 @@ public class CustomerCrudController {
         return ResponseEntity.ok(customers);
     }
 
-    /**
-     * GET: Xem chi tiết customer
-     * Endpoint: GET /api/customers/{customerId}
-     */
+    // <<< CHỨC NĂNG: XEM CHI TIẾT KHÁCH HÀNG
+    // <<< ĐẦU API: GET /api/customers/{customerId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/{customerId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -105,10 +103,9 @@ public class CustomerCrudController {
         return ResponseEntity.ok(customer);
     }
 
-    /**
-     * GET: Tìm customer theo email
-     * Endpoint: GET /api/customers/email/{email}
-     */
+    // <<< CHỨC NĂNG: TÌM KHÁCH HÀNG THEO EMAIL
+    // <<< ĐẦU API: GET /api/customers/email/{email}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/email/{email}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -132,10 +129,9 @@ public class CustomerCrudController {
         return ResponseEntity.ok(customer);
     }
 
-    /**
-     * GET: Tìm customer theo phone number
-     * Endpoint: GET /api/customers/phone/{phoneNumber}
-     */
+    // <<< CHỨC NĂNG: TÌM KHÁCH HÀNG THEO SỐ ĐIỆN THOẠI
+    // <<< ĐẦU API: GET /api/customers/phone/{phoneNumber}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/phone/{phoneNumber}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -159,10 +155,9 @@ public class CustomerCrudController {
         return ResponseEntity.ok(customer);
     }
 
-    /**
-     * POST: Tạo customer mới
-     * Endpoint: POST /api/customers
-     */
+    // <<< CHỨC NĂNG: TẠO KHÁCH HÀNG MỚI
+    // <<< ĐẦU API: POST /api/customers
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PostMapping
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -187,10 +182,9 @@ public class CustomerCrudController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdCustomer);
     }
 
-    /**
-     * PUT: Cập nhật customer
-     * Endpoint: PUT /api/customers/{customerId}
-     */
+    // <<< CHỨC NĂNG: CẬP NHẬT KHÁCH HÀNG
+    // <<< ĐẦU API: PUT /api/customers/{customerId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PutMapping("/{customerId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -219,10 +213,9 @@ public class CustomerCrudController {
         return ResponseEntity.ok(updatedCustomer);
     }
 
-    /**
-     * DELETE: Xóa customer
-     * Endpoint: DELETE /api/customers/{customerId}
-     */
+    // <<< CHỨC NĂNG: XÓA KHÁCH HÀNG (ADMIN ONLY)
+    // <<< ĐẦU API: DELETE /api/customers/{customerId}
+    // <<< VAI TRÒ: ADMIN
     @DeleteMapping("/{customerId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(

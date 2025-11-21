@@ -29,7 +29,7 @@ import java.util.Map;
  * CRUD operations for Support Ticket entity
  */
 @RestController
-@RequestMapping("/api/support-tickets")
+@RequestMapping("/api/support-tickets") // <<< MODULE: QUẢN LÝ TICKETS HỖ TRỢ (SUPPORT TICKET MANAGEMENT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Support Ticket Management", description = "APIs quản lý tickets hỗ trợ khách hàng")
@@ -37,10 +37,9 @@ public class SupportTicketCrudController {
 
     private final SupportTicketService supportTicketService;
 
-    /**
-     * GET: Lấy danh sách tickets với filter
-     * Endpoint: GET /api/support-tickets
-     */
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH TICKETS (CÓ FILTER VÀ PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/support-tickets
+    // <<< VAI TRÒ: SUPPORT_STAFF, DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy danh sách tickets", description = "Lấy danh sách tickets với filter và phân trang")
@@ -86,10 +85,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.ok(tickets);
     }
 
-    /**
-     * GET: Lấy tickets theo customer
-     * Endpoint: GET /api/support-tickets/customer/{customerId}
-     */
+    // <<< CHỨC NĂNG: LẤY TICKETS THEO KHÁCH HÀNG
+    // <<< ĐẦU API: GET /api/support-tickets/customer/{customerId}
+    // <<< VAI TRÒ: SUPPORT_STAFF, DEALER_STAFF, BRAND_MANAGER, ADMIN, CUSTOMER
     @GetMapping("/customer/{customerId}")
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN', 'CUSTOMER')")
     @Operation(summary = "Lấy tickets theo khách hàng")
@@ -105,10 +103,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.ok(tickets);
     }
 
-    /**
-     * GET: Lấy tickets theo assigned user
-     * Endpoint: GET /api/support-tickets/assigned/{userId}
-     */
+    // <<< CHỨC NĂNG: LẤY TICKETS THEO NHÂN VIÊN ĐƯỢC ASSIGN
+    // <<< ĐẦU API: GET /api/support-tickets/assigned/{userId}
+    // <<< VAI TRÒ: SUPPORT_STAFF, DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/assigned/{userId}")
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy tickets theo nhân viên được assign")
@@ -123,10 +120,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.ok(tickets);
     }
 
-    /**
-     * GET: Lấy tickets theo sales order
-     * Endpoint: GET /api/support-tickets/order/{orderId}
-     */
+    // <<< CHỨC NĂNG: LẤY TICKETS THEO ĐƠN HÀNG
+    // <<< ĐẦU API: GET /api/support-tickets/order/{orderId}
+    // <<< VAI TRÒ: SUPPORT_STAFF, DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/order/{orderId}")
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy tickets theo đơn hàng")
@@ -141,10 +137,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.ok(tickets);
     }
 
-    /**
-     * GET: Lấy tickets theo vehicle
-     * Endpoint: GET /api/support-tickets/vehicle/{vehicleId}
-     */
+    // <<< CHỨC NĂNG: LẤY TICKETS THEO XE
+    // <<< ĐẦU API: GET /api/support-tickets/vehicle/{vehicleId}
+    // <<< VAI TRÒ: SUPPORT_STAFF, DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/vehicle/{vehicleId}")
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy tickets theo xe")
@@ -159,10 +154,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.ok(tickets);
     }
 
-    /**
-     * GET: Lấy tickets đang mở
-     * Endpoint: GET /api/support-tickets/open
-     */
+    // <<< CHỨC NĂNG: LẤY TICKETS ĐANG MỞ (OPEN)
+    // <<< ĐẦU API: GET /api/support-tickets/open
+    // <<< VAI TRÒ: SUPPORT_STAFF, DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/open")
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy tickets đang mở")
@@ -175,10 +169,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.ok(tickets);
     }
 
-    /**
-     * GET: Lấy tickets pending (chưa assign)
-     * Endpoint: GET /api/support-tickets/pending
-     */
+    // <<< CHỨC NĂNG: LẤY TICKETS CHƯA ASSIGN (PENDING)
+    // <<< ĐẦU API: GET /api/support-tickets/pending
+    // <<< VAI TRÒ: SUPPORT_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/pending")
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy tickets chưa assign")
@@ -191,10 +184,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.ok(tickets);
     }
 
-    /**
-     * GET: Lấy my tickets (của user hiện tại)
-     * Endpoint: GET /api/support-tickets/my-tickets
-     */
+    // <<< CHỨC NĂNG: LẤY TICKETS CỦA USER HIỆN TẠI (ĐƯỢC ASSIGN)
+    // <<< ĐẦU API: GET /api/support-tickets/my-tickets
+    // <<< VAI TRÒ: SUPPORT_STAFF, DEALER_STAFF
     @GetMapping("/my-tickets")
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'DEALER_STAFF')")
     @Operation(summary = "Lấy tickets của tôi")
@@ -210,10 +202,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.ok(tickets);
     }
 
-    /**
-     * GET: Xem chi tiết ticket
-     * Endpoint: GET /api/support-tickets/{ticketId}
-     */
+    // <<< CHỨC NĂNG: XEM CHI TIẾT TICKET
+    // <<< ĐẦU API: GET /api/support-tickets/{ticketId}
+    // <<< VAI TRÒ: SUPPORT_STAFF, DEALER_STAFF, BRAND_MANAGER, ADMIN, CUSTOMER
     @GetMapping("/{ticketId}")
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN', 'CUSTOMER')")
     @Operation(summary = "Xem chi tiết ticket")
@@ -229,10 +220,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.ok(ticket);
     }
 
-    /**
-     * POST: Tạo ticket mới
-     * Endpoint: POST /api/support-tickets
-     */
+    // <<< CHỨC NĂNG: TẠO TICKET MỚI
+    // <<< ĐẦU API: POST /api/support-tickets
+    // <<< VAI TRÒ: SUPPORT_STAFF, DEALER_STAFF, CUSTOMER, ADMIN
     @PostMapping
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'DEALER_STAFF', 'CUSTOMER', 'ADMIN')")
     @Operation(summary = "Tạo ticket mới", description = "Tạo ticket hỗ trợ mới")
@@ -251,10 +241,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTicket);
     }
 
-    /**
-     * PUT: Cập nhật ticket
-     * Endpoint: PUT /api/support-tickets/{ticketId}
-     */
+    // <<< CHỨC NĂNG: CẬP NHẬT THÔNG TIN TICKET
+    // <<< ĐẦU API: PUT /api/support-tickets/{ticketId}
+    // <<< VAI TRÒ: SUPPORT_STAFF, DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PutMapping("/{ticketId}")
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Cập nhật ticket")
@@ -274,10 +263,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.ok(updatedTicket);
     }
 
-    /**
-     * PATCH: Assign ticket cho user
-     * Endpoint: PATCH /api/support-tickets/{ticketId}/assign
-     */
+    // <<< CHỨC NĂNG: ASSIGN TICKET CHO NHÂN VIÊN
+    // <<< ĐẦU API: PATCH /api/support-tickets/{ticketId}/assign?userId={userId}
+    // <<< VAI TRÒ: SUPPORT_STAFF, BRAND_MANAGER, ADMIN
     @PatchMapping("/{ticketId}/assign")
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Assign ticket cho nhân viên")
@@ -295,10 +283,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.ok(assignedTicket);
     }
 
-    /**
-     * PATCH: Cập nhật trạng thái ticket
-     * Endpoint: PATCH /api/support-tickets/{ticketId}/status
-     */
+    // <<< CHỨC NĂNG: CẬP NHẬT TRẠNG THÁI TICKET
+    // <<< ĐẦU API: PATCH /api/support-tickets/{ticketId}/status?status={status}
+    // <<< VAI TRÒ: SUPPORT_STAFF, DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PatchMapping("/{ticketId}/status")
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Cập nhật trạng thái ticket")
@@ -316,10 +303,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.ok(updatedTicket);
     }
 
-    /**
-     * PATCH: Đóng ticket
-     * Endpoint: PATCH /api/support-tickets/{ticketId}/close
-     */
+    // <<< CHỨC NĂNG: ĐÓNG TICKET
+    // <<< ĐẦU API: PATCH /api/support-tickets/{ticketId}/close
+    // <<< VAI TRÒ: SUPPORT_STAFF, DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PatchMapping("/{ticketId}/close")
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Đóng ticket")
@@ -336,10 +322,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.ok(closedTicket);
     }
 
-    /**
-     * PATCH: Mở lại ticket
-     * Endpoint: PATCH /api/support-tickets/{ticketId}/reopen
-     */
+    // <<< CHỨC NĂNG: MỞ LẠI TICKET
+    // <<< ĐẦU API: PATCH /api/support-tickets/{ticketId}/reopen
+    // <<< VAI TRÒ: SUPPORT_STAFF, BRAND_MANAGER, ADMIN, CUSTOMER
     @PatchMapping("/{ticketId}/reopen")
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'BRAND_MANAGER', 'ADMIN', 'CUSTOMER')")
     @Operation(summary = "Mở lại ticket")
@@ -356,10 +341,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.ok(reopenedTicket);
     }
 
-    /**
-     * DELETE: Xóa ticket
-     * Endpoint: DELETE /api/support-tickets/{ticketId}
-     */
+    // <<< CHỨC NĂNG: XÓA VĨNH VIỄN TICKET
+    // <<< ĐẦU API: DELETE /api/support-tickets/{ticketId}
+    // <<< VAI TRÒ: ADMIN
     @DeleteMapping("/{ticketId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa ticket (chỉ ADMIN)")
@@ -376,10 +360,9 @@ public class SupportTicketCrudController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * GET: Thống kê tickets
-     * Endpoint: GET /api/support-tickets/statistics
-     */
+    // <<< CHỨC NĂNG: THỐNG KÊ TICKETS (THEO TRẠNG THÁI, ƯU TIÊN,...)
+    // <<< ĐẦU API: GET /api/support-tickets/statistics
+    // <<< VAI TRÒ: SUPPORT_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/statistics")
     @PreAuthorize("hasAnyRole('SUPPORT_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Thống kê tickets")

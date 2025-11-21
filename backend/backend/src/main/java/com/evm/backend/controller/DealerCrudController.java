@@ -27,7 +27,7 @@ import java.util.List;
  * CRUD operations for Dealer entity
  */
 @RestController
-@RequestMapping("/api/dealers")
+@RequestMapping("/api/dealers") // <<< MODULE: QUẢN LÝ ĐẠI LÝ (DEALER MANAGEMENT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Dealer Management", description = "APIs quản lý đại lý")
@@ -35,10 +35,9 @@ public class DealerCrudController {
 
     private final DealerService dealerService;
 
-    /**
-     * GET: Lấy danh sách dealers với filter
-     * Endpoint: GET /api/dealers/filter
-     */
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH ĐẠI LÝ (CÓ FILTER VÀ PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/dealers/filter
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/filter")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -86,10 +85,9 @@ public class DealerCrudController {
         return ResponseEntity.ok(dealers);
     }
 
-    /**
-     * GET: Lấy danh sách dealers của brand
-     * Endpoint: GET /api/dealers/brand/{brandId}
-     */
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH ĐẠI LÝ THEO BRAND (KHÔNG PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/dealers/brand/{brandId}
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN, DEALER_STAFF
     @GetMapping("/brand/{brandId}")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN', 'DEALER_STAFF')")
     @Operation(
@@ -113,10 +111,9 @@ public class DealerCrudController {
         return ResponseEntity.ok(dealers);
     }
 
-    /**
-     * GET: Xem chi tiết dealer
-     * Endpoint: GET /api/dealers/{dealerId}
-     */
+    // <<< CHỨC NĂNG: XEM CHI TIẾT ĐẠI LÝ
+    // <<< ĐẦU API: GET /api/dealers/{dealerId}
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN, DEALER_STAFF
     @GetMapping("/{dealerId}")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN', 'DEALER_STAFF')")
     @Operation(
@@ -140,10 +137,9 @@ public class DealerCrudController {
         return ResponseEntity.ok(dealer);
     }
 
-    /**
-     * POST: Tạo dealer mới
-     * Endpoint: POST /api/dealers/create
-     */
+    // <<< CHỨC NĂNG: TẠO ĐẠI LÝ MỚI
+    // <<< ĐẦU API: POST /api/dealers/create
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PostMapping("/create")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -169,10 +165,9 @@ public class DealerCrudController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdDealer);
     }
 
-    /**
-     * PUT: Cập nhật dealer
-     * Endpoint: PUT /api/dealers/update/{dealerId}
-     */
+    // <<< CHỨC NĂNG: CẬP NHẬT ĐẠI LÝ
+    // <<< ĐẦU API: PUT /api/dealers/update/{dealerId}
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PutMapping("/update/{dealerId}")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -201,10 +196,9 @@ public class DealerCrudController {
         return ResponseEntity.ok(updatedDealer);
     }
 
-    /**
-     * DELETE: Xóa dealer
-     * Endpoint: DELETE /api/dealers/delete/{dealerId}
-     */
+    // <<< CHỨC NĂNG: XÓA ĐẠI LÝ (ADMIN ONLY)
+    // <<< ĐẦU API: DELETE /api/dealers/delete/{dealerId}
+    // <<< VAI TRÒ: ADMIN
     @DeleteMapping("/delete/{dealerId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(

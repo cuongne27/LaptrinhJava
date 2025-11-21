@@ -19,10 +19,10 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * Controller for Product CRUD operations
- * Chỉ BRAND_MANAGER có quyền thực hiện CRUD
+ * Chỉ BRAND_MANAGER và ADMIN có quyền thực hiện CRUD
  */
 @RestController
-@RequestMapping("/api/products")
+@RequestMapping("/api/products") // <<< MODULE: QUẢN LÝ SẢN PHẨM (PRODUCT CRUD)
 @RequiredArgsConstructor
 @Tag(name = "Brand Product Management", description = "APIs for managing products (CRUD)")
 @SecurityRequirement(name = "bearerAuth")
@@ -32,8 +32,11 @@ public class ProductCrudController {
 
     /**
      * CREATE - Tạo sản phẩm mới
-     * POST /api/brand/products
+     * POST /api/products/create
      */
+    // <<< CHỨC NĂNG: TẠO SẢN PHẨM MỚI
+    // <<< ĐẦU API: POST /api/products/create
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PostMapping("/create")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -60,8 +63,11 @@ public class ProductCrudController {
 
     /**
      * UPDATE - Cập nhật sản phẩm
-     * PUT /api/brand/products/{productId}
+     * PUT /api/products/{productId}
      */
+    // <<< CHỨC NĂNG: CẬP NHẬT THÔNG TIN SẢN PHẨM
+    // <<< ĐẦU API: PUT /api/products/{productId}
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PutMapping("/{productId}")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -90,8 +96,11 @@ public class ProductCrudController {
 
     /**
      * SOFT DELETE - Đặt sản phẩm thành inactive
-     * DELETE /api/brand/products/{productId}
+     * DELETE /api/products/{productId}
      */
+    // <<< CHỨC NĂNG: SOFT DELETE (VÔ HIỆU HÓA) SẢN PHẨM
+    // <<< ĐẦU API: DELETE /api/products/{productId}
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @DeleteMapping("/{productId}")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -118,8 +127,11 @@ public class ProductCrudController {
 
     /**
      * HARD DELETE - Xóa sản phẩm vĩnh viễn
-     * DELETE /api/brand/products/{productId}/permanent
+     * DELETE /api/products/{productId}/permanent
      */
+    // <<< CHỨC NĂNG: HARD DELETE (XÓA VĨNH VIỄN) SẢN PHẨM
+    // <<< ĐẦU API: DELETE /api/products/{productId}/permanent
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @DeleteMapping("/{productId}/permanent")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(

@@ -27,7 +27,7 @@ import java.util.Map;
  * CRUD operations for Inventory entity
  */
 @RestController
-@RequestMapping("/api/inventory")
+@RequestMapping("/api/inventory") // <<< MODULE: QUẢN LÝ KHO HÀNG (INVENTORY MANAGEMENT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Inventory Management", description = "APIs quản lý kho hàng (inventory)")
@@ -35,10 +35,9 @@ public class InventoryCrudController {
 
     private final InventoryService inventoryService;
 
-    /**
-     * GET: Lấy danh sách kho hàng với filter
-     * Endpoint: GET /api/inventory
-     */
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH KHO HÀNG (CÓ FILTER VÀ PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/inventory
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy danh sách kho hàng", description = "Lấy danh sách kho hàng với filter và phân trang")
@@ -78,10 +77,9 @@ public class InventoryCrudController {
         return ResponseEntity.ok(inventories);
     }
 
-    /**
-     * GET: Lấy kho hàng theo sản phẩm
-     * Endpoint: GET /api/inventory/product/{productId}
-     */
+    // <<< CHỨC NĂNG: LẤY KHO HÀNG THEO SẢN PHẨM
+    // <<< ĐẦU API: GET /api/inventory/product/{productId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/product/{productId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy kho hàng theo sản phẩm")
@@ -97,10 +95,9 @@ public class InventoryCrudController {
         return ResponseEntity.ok(inventories);
     }
 
-    /**
-     * GET: Lấy kho hàng theo đại lý
-     * Endpoint: GET /api/inventory/dealer/{dealerId}
-     */
+    // <<< CHỨC NĂNG: LẤY KHO HÀNG THEO ĐẠI LÝ
+    // <<< ĐẦU API: GET /api/inventory/dealer/{dealerId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/dealer/{dealerId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy kho hàng theo đại lý")
@@ -116,10 +113,9 @@ public class InventoryCrudController {
         return ResponseEntity.ok(inventories);
     }
 
-    /**
-     * GET: Lấy kho hàng của hãng (không thuộc đại lý nào)
-     * Endpoint: GET /api/inventory/brand-warehouse
-     */
+    // <<< CHỨC NĂNG: LẤY KHO HÀNG CỦA HÃNG (TỔNG KHO)
+    // <<< ĐẦU API: GET /api/inventory/brand-warehouse
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/brand-warehouse")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy kho hàng của hãng (tổng)")
@@ -132,10 +128,9 @@ public class InventoryCrudController {
         return ResponseEntity.ok(inventories);
     }
 
-    /**
-     * GET: Lấy các kho hàng sắp hết hàng
-     * Endpoint: GET /api/inventory/low-stock
-     */
+    // <<< CHỨC NĂNG: LẤY CÁC KHO HÀNG SẮP HẾT HÀNG (LOW STOCK)
+    // <<< ĐẦU API: GET /api/inventory/low-stock
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/low-stock")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy các kho hàng sắp hết hàng")
@@ -150,10 +145,9 @@ public class InventoryCrudController {
         return ResponseEntity.ok(inventories);
     }
 
-    /**
-     * GET: Xem chi tiết kho hàng
-     * Endpoint: GET /api/inventory/{inventoryId}
-     */
+    // <<< CHỨC NĂNG: XEM CHI TIẾT KHO HÀNG
+    // <<< ĐẦU API: GET /api/inventory/{inventoryId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/{inventoryId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Xem chi tiết kho hàng")
@@ -169,10 +163,9 @@ public class InventoryCrudController {
         return ResponseEntity.ok(inventory);
     }
 
-    /**
-     * GET: Tra cứu kho hàng theo sản phẩm và đại lý
-     * Endpoint: GET /api/inventory/lookup
-     */
+    // <<< CHỨC NĂNG: TRA CỨU KHO HÀNG THEO SẢN PHẨM VÀ ĐẠI LÝ
+    // <<< ĐẦU API: GET /api/inventory/lookup
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/lookup")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Tra cứu kho hàng theo sản phẩm và đại lý")
@@ -189,10 +182,9 @@ public class InventoryCrudController {
         return ResponseEntity.ok(inventory);
     }
 
-    /**
-     * POST: Tạo bản ghi kho hàng mới
-     * Endpoint: POST /api/inventory
-     */
+    // <<< CHỨC NĂNG: TẠO BẢN GHI KHO HÀNG MỚI
+    // <<< ĐẦU API: POST /api/inventory
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PostMapping
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Tạo bản ghi kho hàng mới", description = "Tạo kho hàng mới (thường chỉ dành cho admin/manager)")
@@ -211,10 +203,9 @@ public class InventoryCrudController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdInventory);
     }
 
-    /**
-     * PUT: Cập nhật thông tin kho hàng
-     * Endpoint: PUT /api/inventory/{inventoryId}
-     */
+    // <<< CHỨC NĂNG: CẬP NHẬT THÔNG TIN KHO HÀNG (VD: VỊ TRÍ, LÔ HÀNG)
+    // <<< ĐẦU API: PUT /api/inventory/{inventoryId}
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PutMapping("/{inventoryId}")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Cập nhật thông tin kho hàng")
@@ -234,10 +225,9 @@ public class InventoryCrudController {
         return ResponseEntity.ok(updatedInventory);
     }
 
-    /**
-     * PATCH: Điều chỉnh số lượng (nhập/xuất kho thủ công)
-     * Endpoint: PATCH /api/inventory/{inventoryId}/adjust
-     */
+    // <<< CHỨC NĂNG: ĐIỀU CHỈNH SỐ LƯỢNG (NHẬP/XUẤT KHO THỦ CÔNG)
+    // <<< ĐẦU API: PATCH /api/inventory/{inventoryId}/adjust
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PatchMapping("/{inventoryId}/adjust")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Điều chỉnh số lượng (nhập/xuất thủ công)")
@@ -257,10 +247,9 @@ public class InventoryCrudController {
         return ResponseEntity.ok(adjustedInventory);
     }
 
-    /**
-     * PATCH: Đặt hàng (tạm giữ)
-     * Endpoint: PATCH /api/inventory/{inventoryId}/reserve
-     */
+    // <<< CHỨC NĂNG: ĐẶT HÀNG (TẠM GIỮ)
+    // <<< ĐẦU API: PATCH /api/inventory/{inventoryId}/reserve
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PatchMapping("/{inventoryId}/reserve")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Đặt hàng (tạm giữ) số lượng")
@@ -279,10 +268,9 @@ public class InventoryCrudController {
         return ResponseEntity.ok(reservedInventory);
     }
 
-    /**
-     * PATCH: Hủy đặt hàng (nhả tạm giữ)
-     * Endpoint: PATCH /api/inventory/{inventoryId}/release
-     */
+    // <<< CHỨC NĂNG: HỦY ĐẶT HÀNG (NHẢ TẠM GIỮ)
+    // <<< ĐẦU API: PATCH /api/inventory/{inventoryId}/release
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PatchMapping("/{inventoryId}/release")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Hủy đặt hàng (nhả tạm giữ) số lượng")
@@ -301,10 +289,9 @@ public class InventoryCrudController {
         return ResponseEntity.ok(releasedInventory);
     }
 
-    /**
-     * POST: Chuyển kho
-     * Endpoint: POST /api/inventory/{fromInventoryId}/transfer
-     */
+    // <<< CHỨC NĂNG: CHUYỂN KHO
+    // <<< ĐẦU API: POST /api/inventory/{fromInventoryId}/transfer
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PostMapping("/{fromInventoryId}/transfer")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Chuyển kho (từ kho này sang đại lý khác)")
@@ -324,10 +311,9 @@ public class InventoryCrudController {
         return ResponseEntity.ok(sourceInventory);
     }
 
-    /**
-     * DELETE: Xóa bản ghi kho hàng
-     * Endpoint: DELETE /api/inventory/{inventoryId}
-     */
+    // <<< CHỨC NĂNG: XÓA BẢN GHI KHO HÀNG
+    // <<< ĐẦU API: DELETE /api/inventory/{inventoryId}
+    // <<< VAI TRÒ: ADMIN
     @DeleteMapping("/{inventoryId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa bản ghi kho hàng (chỉ ADMIN)", description = "Chỉ xóa được nếu tổng số lượng = 0")
@@ -345,10 +331,9 @@ public class InventoryCrudController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * GET: Thống kê kho hàng
-     * Endpoint: GET /api/inventory/statistics
-     */
+    // <<< CHỨC NĂNG: THỐNG KÊ KHO HÀNG
+    // <<< ĐẦU API: GET /api/inventory/statistics
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/statistics")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Thống kê kho hàng")

@@ -26,7 +26,7 @@ import java.util.List;
  * CRUD operations for Promotion entity
  */
 @RestController
-@RequestMapping("/api/promotions")
+@RequestMapping("/api/promotions") // <<< MODULE: QUẢN LÝ CHƯƠNG TRÌNH KHUYẾN MÃI (PROMOTION MANAGEMENT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Promotion Management", description = "APIs quản lý chương trình khuyến mãi")
@@ -38,6 +38,9 @@ public class PromotionCrudController {
      * GET: Lấy danh sách promotions với filter
      * Endpoint: GET /api/promotions
      */
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH KHUYẾN MÃI (CÓ LỌC VÀ PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/promotions
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -84,6 +87,9 @@ public class PromotionCrudController {
      * GET: Lấy danh sách promotions đang hoạt động
      * Endpoint: GET /api/promotions/active
      */
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH KHUYẾN MÃI ĐANG HOẠT ĐỘNG
+    // <<< ĐẦU API: GET /api/promotions/active
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/active")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -107,6 +113,9 @@ public class PromotionCrudController {
      * GET: Xem chi tiết promotion
      * Endpoint: GET /api/promotions/{promotionId}
      */
+    // <<< CHỨC NĂNG: XEM CHI TIẾT CHƯƠNG TRÌNH KHUYẾN MÃI THEO ID
+    // <<< ĐẦU API: GET /api/promotions/{promotionId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/{promotionId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -134,6 +143,9 @@ public class PromotionCrudController {
      * GET: Tìm promotion theo code
      * Endpoint: GET /api/promotions/code/{promotionCode}
      */
+    // <<< CHỨC NĂNG: TÌM CHI TIẾT CHƯƠNG TRÌNH KHUYẾN MÃI THEO MÃ (CODE)
+    // <<< ĐẦU API: GET /api/promotions/code/{promotionCode}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/code/{promotionCode}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -161,6 +173,9 @@ public class PromotionCrudController {
      * POST: Tạo promotion mới
      * Endpoint: POST /api/promotions
      */
+    // <<< CHỨC NĂNG: TẠO CHƯƠNG TRÌNH KHUYẾN MÃI MỚI
+    // <<< ĐẦU API: POST /api/promotions
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PostMapping
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -189,6 +204,9 @@ public class PromotionCrudController {
      * PUT: Cập nhật promotion
      * Endpoint: PUT /api/promotions/{promotionId}
      */
+    // <<< CHỨC NĂNG: CẬP NHẬT CHƯƠNG TRÌNH KHUYẾN MÃI
+    // <<< ĐẦU API: PUT /api/promotions/{promotionId}
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PutMapping("/{promotionId}")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -221,6 +239,9 @@ public class PromotionCrudController {
      * DELETE: Xóa promotion
      * Endpoint: DELETE /api/promotions/{promotionId}
      */
+    // <<< CHỨC NĂNG: XÓA VĨNH VIỄN CHƯƠNG TRÌNH KHUYẾN MÃI
+    // <<< ĐẦU API: DELETE /api/promotions/{promotionId}
+    // <<< VAI TRÒ: ADMIN (Chỉ ADMIN mới được xóa vĩnh viễn)
     @DeleteMapping("/{promotionId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(

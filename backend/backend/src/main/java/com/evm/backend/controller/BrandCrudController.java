@@ -29,7 +29,7 @@ import java.util.List;
  * CRUD operations for Brand entity
  */
 @RestController
-@RequestMapping("/api/brands")
+@RequestMapping("/api/brands") // <<< MODULE: QUẢN LÝ THƯƠNG HIỆU (BRAND MANAGEMENT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Brand Management", description = "APIs quản lý thương hiệu xe điện")
@@ -37,10 +37,9 @@ public class BrandCrudController {
 
     private final BrandService brandService;
 
-    /**
-     * GET: Lấy danh sách tất cả brands (with pagination)
-     * Endpoint: GET /api/brands
-     */
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH TẤT CẢ THƯƠNG HIỆU (CÓ PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/brands
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN, DEALER_STAFF
     @GetMapping
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN', 'DEALER_STAFF')")
     @Operation(
@@ -76,10 +75,9 @@ public class BrandCrudController {
         return ResponseEntity.ok(brands);
     }
 
-    /**
-     * GET: Lấy danh sách tất cả brands (without pagination)
-     * Endpoint: GET /api/brands/all
-     */
+    // <<< CHỨC NĂNG: LẤY TẤT CẢ THƯƠNG HIỆU (KHÔNG PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/brands/all
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN, DEALER_STAFF
     @GetMapping("/all")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN', 'DEALER_STAFF')")
     @Operation(
@@ -99,10 +97,9 @@ public class BrandCrudController {
         return ResponseEntity.ok(brands);
     }
 
-    /**
-     * GET: Xem chi tiết brand
-     * Endpoint: GET /api/brands/{brandId}
-     */
+    // <<< CHỨC NĂNG: XEM CHI TIẾT THƯƠNG HIỆU
+    // <<< ĐẦU API: GET /api/brands/{brandId}
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN, DEALER_STAFF
     @GetMapping("/{brandId}")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN', 'DEALER_STAFF')")
     @Operation(
@@ -126,10 +123,9 @@ public class BrandCrudController {
         return ResponseEntity.ok(brand);
     }
 
-    /**
-     * POST: Tạo brand mới
-     * Endpoint: POST /api/brands
-     */
+    // <<< CHỨC NĂNG: TẠO THƯƠNG HIỆU MỚI
+    // <<< ĐẦU API: POST /api/brands/create
+    // <<< VAI TRÒ: ADMIN
     @PostMapping("/create")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
@@ -154,10 +150,9 @@ public class BrandCrudController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdBrand);
     }
 
-    /**
-     * PUT: Cập nhật brand
-     * Endpoint: PUT /api/brands/{brandId}
-     */
+    // <<< CHỨC NĂNG: CẬP NHẬT THƯƠNG HIỆU
+    // <<< ĐẦU API: PUT /api/brands/update/{brandId}
+    // <<< VAI TRÒ: ADMIN
     @PutMapping("/update/{brandId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
@@ -186,10 +181,9 @@ public class BrandCrudController {
         return ResponseEntity.ok(updatedBrand);
     }
 
-    /**
-     * DELETE: Xóa brand
-     * Endpoint: DELETE /api/brands/{brandId}
-     */
+    // <<< CHỨC NĂNG: XÓA THƯƠNG HIỆU
+    // <<< ĐẦU API: DELETE /api/brands/delete/{brandId}
+    // <<< VAI TRÒ: ADMIN
     @DeleteMapping("/delete/{brandId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(

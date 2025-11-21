@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/quotations")
+@RequestMapping("/api/quotations") // <<< MODULE: QUẢN LÝ BÁO GIÁ (QUOTATION MANAGEMENT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Quotation Management", description = "APIs quản lý báo giá")
@@ -32,6 +32,9 @@ public class QuotationController {
 
     private final QuotationService quotationService;
 
+    // <<< CHỨC NĂNG: TẠO BÁO GIÁ MỚI
+    // <<< ĐẦU API: POST /api/quotations
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PostMapping
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Tạo báo giá mới", description = "Tạo báo giá cho khách hàng với đầy đủ chi tiết giá")
@@ -44,6 +47,9 @@ public class QuotationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    // <<< CHỨC NĂNG: XEM CHI TIẾT BÁO GIÁ THEO ID
+    // <<< ĐẦU API: GET /api/quotations/{id}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN, CUSTOMER
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN', 'CUSTOMER')")
     @Operation(summary = "Xem chi tiết báo giá")
@@ -53,6 +59,9 @@ public class QuotationController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: XEM CHI TIẾT BÁO GIÁ THEO MÃ BÁO GIÁ (QUOTATION NUMBER)
+    // <<< ĐẦU API: GET /api/quotations/number/{quotationNumber}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN, CUSTOMER
     @GetMapping("/number/{quotationNumber}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN', 'CUSTOMER')")
     @Operation(summary = "Xem báo giá theo mã")
@@ -64,6 +73,9 @@ public class QuotationController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH TẤT CẢ BÁO GIÁ (CÓ PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/quotations
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy danh sách báo giá")
@@ -83,6 +95,9 @@ public class QuotationController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: CẬP NHẬT BÁO GIÁ
+    // <<< ĐẦU API: PUT /api/quotations/{id}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Cập nhật báo giá", description = "Chỉ có thể cập nhật báo giá ở trạng thái DRAFT")
@@ -96,6 +111,9 @@ public class QuotationController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: XÓA VĨNH VIỄN BÁO GIÁ
+    // <<< ĐẦU API: DELETE /api/quotations/{id}
+    // <<< VAI TRÒ: ADMIN
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa báo giá")
@@ -108,6 +126,9 @@ public class QuotationController {
         return ResponseEntity.noContent().build();
     }
 
+    // <<< CHỨC NĂNG: GỬI BÁO GIÁ CHO KHÁCH HÀNG (CHUYỂN TRẠNG THÁI SANG SENT)
+    // <<< ĐẦU API: POST /api/quotations/{id}/send
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PostMapping("/{id}/send")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Gửi báo giá cho khách hàng", description = "Chuyển trạng thái sang SENT và gửi email")
@@ -120,6 +141,9 @@ public class QuotationController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: CHẤP NHẬN BÁO GIÁ (CHUYỂN TRẠNG THÁI SANG ACCEPTED)
+    // <<< ĐẦU API: POST /api/quotations/{id}/accept
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN, CUSTOMER
     @PostMapping("/{id}/accept")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN', 'CUSTOMER')")
     @Operation(summary = "Chấp nhận báo giá", description = "Khách hàng chấp nhận báo giá")
@@ -132,6 +156,9 @@ public class QuotationController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: TỪ CHỐI BÁO GIÁ (CHUYỂN TRẠNG THÁI SANG REJECTED)
+    // <<< ĐẦU API: POST /api/quotations/{id}/reject
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN, CUSTOMER
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN', 'CUSTOMER')")
     @Operation(summary = "Từ chối báo giá")
@@ -144,6 +171,9 @@ public class QuotationController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: CHUYỂN BÁO GIÁ ĐÃ CHẤP NHẬN THÀNH ĐƠN HÀNG (SALES ORDER)
+    // <<< ĐẦU API: POST /api/quotations/{id}/convert-to-order
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PostMapping("/{id}/convert-to-order")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Chuyển báo giá thành đơn hàng",
@@ -157,6 +187,9 @@ public class QuotationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    // <<< CHỨC NĂNG: XUẤT BÁO GIÁ RA FILE PDF
+    // <<< ĐẦU API: GET /api/quotations/{id}/export-pdf
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN, CUSTOMER
     @GetMapping("/{id}/export-pdf")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN', 'CUSTOMER')")
     @Operation(summary = "Xuất báo giá ra PDF")
@@ -173,6 +206,9 @@ public class QuotationController {
                 .body(pdfContent);
     }
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH BÁO GIÁ THEO KHÁCH HÀNG
+    // <<< ĐẦU API: GET /api/quotations/customer/{customerId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN, CUSTOMER
     @GetMapping("/customer/{customerId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN', 'CUSTOMER')")
     @Operation(summary = "Lấy báo giá của khách hàng")
@@ -184,6 +220,9 @@ public class QuotationController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH BÁO GIÁ THEO NHÂN VIÊN BÁN HÀNG
+    // <<< ĐẦU API: GET /api/quotations/sales-person/{salesPersonId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/sales-person/{salesPersonId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy báo giá của nhân viên bán hàng")
@@ -195,6 +234,9 @@ public class QuotationController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH BÁO GIÁ ĐÃ HẾT HẠN
+    // <<< ĐẦU API: GET /api/quotations/expired
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/expired")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy danh sách báo giá đã hết hạn")
@@ -204,6 +246,9 @@ public class QuotationController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: TÍNH LẠI GIÁ BÁO GIÁ
+    // <<< ĐẦU API: POST /api/quotations/{id}/recalculate
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PostMapping("/{id}/recalculate")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Tính lại giá báo giá", description = "Tính lại tổng giá sau khi thay đổi khuyến mãi")
@@ -216,4 +261,3 @@ public class QuotationController {
         return ResponseEntity.ok(response);
     }
 }
-

@@ -23,7 +23,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/sales-orders")
+@RequestMapping("/api/sales-orders") // <<< MODULE: QUẢN LÝ ĐƠN HÀNG (SALES ORDER MANAGEMENT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Sales Order Management", description = "APIs quản lý đơn hàng xe điện")
@@ -31,6 +31,9 @@ public class SalesOrderCrudController {
 
     private final SalesOrderService salesOrderService;
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH ĐƠN HÀNG (CÓ LỌC VÀ PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/sales-orders
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy danh sách đơn hàng")
@@ -59,6 +62,9 @@ public class SalesOrderCrudController {
         return ResponseEntity.ok(salesOrderService.getAllOrders(req));
     }
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH ĐƠN HÀNG GẦN ĐÂY (TRONG 7 NGÀY)
+    // <<< ĐẦU API: GET /api/sales-orders/recent
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/recent")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy đơn hàng gần đây (7 ngày)")
@@ -66,6 +72,9 @@ public class SalesOrderCrudController {
         return ResponseEntity.ok(salesOrderService.getRecentOrders());
     }
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH ĐƠN HÀNG ĐANG CHỜ XỬ LÝ
+    // <<< ĐẦU API: GET /api/sales-orders/pending
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/pending")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy đơn hàng đang chờ xử lý")
@@ -73,6 +82,9 @@ public class SalesOrderCrudController {
         return ResponseEntity.ok(salesOrderService.getPendingOrders());
     }
 
+    // <<< CHỨC NĂNG: XEM CHI TIẾT ĐƠN HÀNG THEO ID
+    // <<< ĐẦU API: GET /api/sales-orders/{orderId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN, CUSTOMER
     @GetMapping("/{orderId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN', 'CUSTOMER')")
     @Operation(summary = "Xem chi tiết đơn hàng")
@@ -80,6 +92,9 @@ public class SalesOrderCrudController {
         return ResponseEntity.ok(salesOrderService.getOrderById(orderId));
     }
 
+    // <<< CHỨC NĂNG: TẠO ĐƠN HÀNG MỚI
+    // <<< ĐẦU API: POST /api/sales-orders
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PostMapping
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Tạo đơn hàng mới")
@@ -91,6 +106,9 @@ public class SalesOrderCrudController {
                 .body(salesOrderService.createOrder(request));
     }
 
+    // <<< CHỨC NĂNG: CẬP NHẬT ĐƠN HÀNG
+    // <<< ĐẦU API: PUT /api/sales-orders/{orderId}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PutMapping("/{orderId}")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Cập nhật đơn hàng")
@@ -102,6 +120,9 @@ public class SalesOrderCrudController {
         return ResponseEntity.ok(salesOrderService.updateOrder(orderId, request));
     }
 
+    // <<< CHỨC NĂNG: HỦY ĐƠN HÀNG
+    // <<< ĐẦU API: PATCH /api/sales-orders/{orderId}/cancel
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN, CUSTOMER
     @PatchMapping("/{orderId}/cancel")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN', 'CUSTOMER')")
     @Operation(summary = "Hủy đơn hàng")
@@ -113,6 +134,9 @@ public class SalesOrderCrudController {
         return ResponseEntity.noContent().build();
     }
 
+    // <<< CHỨC NĂNG: CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
+    // <<< ĐẦU API: PATCH /api/sales-orders/{orderId}/status?status={newStatus}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PatchMapping("/{orderId}/status")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Cập nhật trạng thái đơn hàng")
@@ -124,6 +148,9 @@ public class SalesOrderCrudController {
         return ResponseEntity.ok(salesOrderService.updateOrderStatus(orderId, status));
     }
 
+    // <<< CHỨC NĂNG: XÓA VĨNH VIỄN ĐƠN HÀNG
+    // <<< ĐẦU API: DELETE /api/sales-orders/{orderId}
+    // <<< VAI TRÒ: ADMIN
     @DeleteMapping("/{orderId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa đơn hàng")
@@ -135,6 +162,9 @@ public class SalesOrderCrudController {
         return ResponseEntity.noContent().build();
     }
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH ĐƠN HÀNG THEO THÁNG
+    // <<< ĐẦU API: GET /api/sales-orders/monthly-sales?year={year}&month={month}
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/monthly-sales")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Báo cáo doanh số theo tháng")
@@ -145,6 +175,9 @@ public class SalesOrderCrudController {
         return ResponseEntity.ok(salesOrderService.getMonthlySales(year, month));
     }
 
+    // <<< CHỨC NĂNG: GÁN XE CỤ THỂ (VIN) CHO ĐƠN HÀNG
+    // <<< ĐẦU API: PUT /api/sales-orders/{orderId}/assign-vehicle
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @PutMapping("/{orderId}/assign-vehicle")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(
@@ -164,6 +197,9 @@ public class SalesOrderCrudController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: HỦY GÁN XE TỪ ĐƠN HÀNG
+    // <<< ĐẦU API: DELETE /api/sales-orders/{orderId}/vehicle
+    // <<< VAI TRÒ: DEALER_STAFF, BRAND_MANAGER, ADMIN
     @DeleteMapping("/{orderId}/vehicle")
     @PreAuthorize("hasAnyRole('DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(

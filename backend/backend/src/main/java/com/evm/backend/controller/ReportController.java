@@ -19,7 +19,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/reports")
+@RequestMapping("/api/reports") // <<< MODULE: QUẢN LÝ BÁO CÁO VÀ THỐNG KÊ (REPORT MANAGEMENT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Report Management", description = "APIs quản lý báo cáo và thống kê")
@@ -31,6 +31,9 @@ public class ReportController {
     // D.1: SALES REPORTS
     // =====================================================
 
+    // <<< CHỨC NĂNG: BÁO CÁO DOANH SỐ BÁN HÀNG
+    // <<< ĐẦU API: GET /api/reports/sales
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/sales")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Báo cáo doanh số bán hàng",
@@ -60,6 +63,9 @@ public class ReportController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: XUẤT BÁO CÁO DOANH SỐ RA EXCEL
+    // <<< ĐẦU API: GET /api/reports/sales/export
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/sales/export")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Xuất báo cáo doanh số ra Excel")
@@ -101,6 +107,9 @@ public class ReportController {
     // D.2: INVENTORY REPORTS
     // =====================================================
 
+    // <<< CHỨC NĂNG: BÁO CÁO TỒN KHO
+    // <<< ĐẦU API: GET /api/reports/inventory
+    // <<< VAI TRÒ: BRAND_MANAGER, DEALER_STAFF, ADMIN
     @GetMapping("/inventory")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'DEALER_STAFF', 'ADMIN')")
     @Operation(summary = "Báo cáo tồn kho",
@@ -122,6 +131,9 @@ public class ReportController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: XUẤT BÁO CÁO TỒN KHO RA EXCEL
+    // <<< ĐẦU API: GET /api/reports/inventory/export
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/inventory/export")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Xuất báo cáo tồn kho ra Excel")
@@ -153,6 +165,9 @@ public class ReportController {
     // C.1, C.2: DEALER PERFORMANCE
     // =====================================================
 
+    // <<< CHỨC NĂNG: BÁO CÁO HIỆU SUẤT CỦA MỘT ĐẠI LÝ
+    // <<< ĐẦU API: GET /api/reports/dealers/{dealerId}/performance
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/dealers/{dealerId}/performance")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Báo cáo hiệu suất đại lý",
@@ -177,6 +192,9 @@ public class ReportController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: BÁO CÁO HIỆU SUẤT CỦA TẤT CẢ ĐẠI LÝ
+    // <<< ĐẦU API: GET /api/reports/dealers/performance
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/dealers/performance")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Báo cáo hiệu suất tất cả đại lý")
@@ -199,6 +217,9 @@ public class ReportController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: XUẤT BÁO CÁO HIỆU SUẤT ĐẠI LÝ RA PDF
+    // <<< ĐẦU API: GET /api/reports/dealers/{dealerId}/performance/export
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/dealers/{dealerId}/performance/export")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Xuất báo cáo hiệu suất đại lý ra PDF")
@@ -234,6 +255,9 @@ public class ReportController {
     // REVENUE REPORT
     // =====================================================
 
+    // <<< CHỨC NĂNG: BÁO CÁO DOANH THU TỔNG HỢP
+    // <<< ĐẦU API: GET /api/reports/revenue
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/revenue")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Báo cáo doanh thu tổng hợp",
@@ -263,6 +287,9 @@ public class ReportController {
     // DASHBOARD SUMMARY
     // =====================================================
 
+    // <<< CHỨC NĂNG: DỮ LIỆU TỔNG QUAN CHO DASHBOARD
+    // <<< ĐẦU API: GET /api/reports/dashboard
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/dashboard")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Dashboard tổng quan",

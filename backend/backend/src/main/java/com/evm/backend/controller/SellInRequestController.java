@@ -21,7 +21,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/sell-in-requests")
+@RequestMapping("/api/sell-in-requests") // <<< MODULE: QUẢN LÝ YÊU CẦU ĐẶT XE TỪ HÃNG (SELL-IN)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Sell-in Request Management", description = "APIs quản lý đặt xe từ Hãng")
@@ -29,6 +29,9 @@ public class SellInRequestController {
 
     private final SellInRequestService sellInRequestService;
 
+    // <<< CHỨC NĂNG: TẠO YÊU CẦU ĐẶT XE MỚI (TỪ DEALER)
+    // <<< ĐẦU API: POST /api/sell-in-requests
+    // <<< VAI TRÒ: DEALER_MANAGER, DEALER_STAFF, ADMIN
     @PostMapping
     @PreAuthorize("hasAnyRole('DEALER_MANAGER', 'DEALER_STAFF', 'ADMIN')")
     @Operation(summary = "Tạo yêu cầu đặt xe từ Hãng",
@@ -42,6 +45,9 @@ public class SellInRequestController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH YÊU CẦU ĐẶT XE (CÓ FILTER VÀ PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/sell-in-requests
+    // <<< VAI TRÒ: DEALER_MANAGER, DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping
     @PreAuthorize("hasAnyRole('DEALER_MANAGER', 'DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy danh sách yêu cầu đặt xe với filter")
@@ -70,6 +76,9 @@ public class SellInRequestController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: CẬP NHẬT YÊU CẦU ĐẶT XE THEO ID
+    // <<< ĐẦU API: PUT /api/sell-in-requests/{id}
+    // <<< VAI TRÒ: DEALER_MANAGER, DEALER_STAFF, ADMIN
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('DEALER_MANAGER', 'DEALER_STAFF', 'ADMIN')")
     @Operation(summary = "Cập nhật yêu cầu đặt xe",
@@ -84,6 +93,9 @@ public class SellInRequestController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: XÓA YÊU CẦU ĐẶT XE THEO ID
+    // <<< ĐẦU API: DELETE /api/sell-in-requests/{id}
+    // <<< VAI TRÒ: ADMIN
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa yêu cầu đặt xe")
@@ -96,6 +108,9 @@ public class SellInRequestController {
         return ResponseEntity.noContent().build();
     }
 
+    // <<< CHỨC NĂNG: PHÊ DUYỆT YÊU CẦU ĐẶT XE
+    // <<< ĐẦU API: POST /api/sell-in-requests/{id}/approve
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Phê duyệt yêu cầu đặt xe",
@@ -112,6 +127,9 @@ public class SellInRequestController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: TỪ CHỐI YÊU CẦU ĐẶT XE
+    // <<< ĐẦU API: POST /api/sell-in-requests/{id}/reject
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Từ chối yêu cầu đặt xe")
@@ -126,6 +144,9 @@ public class SellInRequestController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: CẬP NHẬT TRẠNG THÁI BẤT KỲ CỦA YÊU CẦU (CHỦ YẾU DÙNG SAU KHI APPROVE/REJECT)
+    // <<< ĐẦU API: PATCH /api/sell-in-requests/{id}/status?status={newStatus}
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Cập nhật trạng thái yêu cầu")
@@ -139,6 +160,9 @@ public class SellInRequestController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: ĐÁNH DẤU YÊU CẦU ĐANG VẬN CHUYỂN
+    // <<< ĐẦU API: POST /api/sell-in-requests/{id}/mark-in-transit
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @PostMapping("/{id}/mark-in-transit")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Đánh dấu đang vận chuyển",
@@ -152,6 +176,9 @@ public class SellInRequestController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: ĐÁNH DẤU YÊU CẦU ĐÃ GIAO XE THÀNH CÔNG (CẬP NHẬT TỒN KHO)
+    // <<< ĐẦU API: POST /api/sell-in-requests/{id}/mark-delivered
+    // <<< VAI TRÒ: BRAND_MANAGER, DEALER_MANAGER, ADMIN
     @PostMapping("/{id}/mark-delivered")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'DEALER_MANAGER', 'ADMIN')")
     @Operation(summary = "Đánh dấu đã giao xe",
@@ -165,6 +192,9 @@ public class SellInRequestController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: LẤY TẤT CẢ YÊU CẦU CỦA MỘT DEALER CỤ THỂ
+    // <<< ĐẦU API: GET /api/sell-in-requests/dealer/{dealerId}
+    // <<< VAI TRÒ: DEALER_MANAGER, DEALER_STAFF, BRAND_MANAGER, ADMIN
     @GetMapping("/dealer/{dealerId}")
     @PreAuthorize("hasAnyRole('DEALER_MANAGER', 'DEALER_STAFF', 'BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy yêu cầu của Dealer")
@@ -176,6 +206,9 @@ public class SellInRequestController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH YÊU CẦU ĐANG CHỜ DUYỆT (CHO HÃNG/ADMIN)
+    // <<< ĐẦU API: GET /api/sell-in-requests/pending
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/pending")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy danh sách yêu cầu chờ duyệt")
@@ -185,6 +218,9 @@ public class SellInRequestController {
         return ResponseEntity.ok(response);
     }
 
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH GIAO XE SẮP TỚI
+    // <<< ĐẦU API: GET /api/sell-in-requests/upcoming-deliveries
+    // <<< VAI TRÒ: BRAND_MANAGER, DEALER_MANAGER, ADMIN
     @GetMapping("/upcoming-deliveries")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'DEALER_MANAGER', 'ADMIN')")
     @Operation(summary = "Lấy danh sách giao xe sắp tới (7 ngày)",
