@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EVM Frontend - Electric Vehicle Management System
+
+Frontend application for EVM system built with Next.js 14, React, TypeScript, and Tailwind CSS.
+
+## Features
+
+- 🎨 Modern UI with Tailwind CSS and shadcn/ui components
+- 📱 Fully responsive design
+- 🔐 JWT-based authentication
+- 📊 Dashboard with charts and analytics
+- 🛠️ Complete CRUD operations for all entities
+- 📈 Reports and statistics
+- 🔍 Advanced filtering and search
+- 🎯 Role-based access control
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ 
+- npm or yarn
+
+### Installation
+
+```bash
+npm install
+```
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+frontend/
+├── app/                    # Next.js app directory
+│   ├── (auth)/            # Authentication pages
+│   ├── (dashboard)/       # Dashboard and main pages
+│   └── layout.tsx         # Root layout
+├── components/            # Reusable components
+│   ├── ui/               # shadcn/ui components
+│   ├── layout/           # Layout components
+│   └── features/         # Feature-specific components
+├── lib/                  # Utilities and helpers
+│   ├── api/             # API client
+│   ├── hooks/           # Custom hooks
+│   └── utils/           # Utility functions
+├── types/               # TypeScript types
+├── store/              # State management (Zustand)
+└── public/             # Static assets
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Tech Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **UI Components**: shadcn/ui + Radix UI
+- **State Management**: Zustand
+- **Data Fetching**: TanStack Query
+- **Forms**: React Hook Form + Zod
+- **Charts**: Recharts
+- **Icons**: Lucide React
 
-## Deploy on Vercel
+## Environment Variables
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Create a `.env.local` file:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8080
+```
+
+## License
+
+MIT
+
