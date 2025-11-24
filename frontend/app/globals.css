@@ -58,3 +58,41 @@
   }
 }
 
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.25s ease forwards;
+  }
+
+  .modal-pop {
+    animation: modalPop 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    transform-origin: center;
+  }
+}
+
+.theme-transition body,
+.theme-transition body * {
+  transition-property: background-color, color, border-color, fill, stroke, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalPop {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+

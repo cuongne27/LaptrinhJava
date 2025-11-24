@@ -149,6 +149,4 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
             "o.customer.id = :customerId AND " +
             "o.status NOT IN ('COMPLETED', 'CANCELLED')")
     Long countPendingByCustomer(@Param("customerId") Long customerId);
-
-//    boolean existsByQuotationId(Long id);
 }

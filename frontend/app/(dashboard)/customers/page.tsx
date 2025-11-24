@@ -33,6 +33,7 @@ export default function CustomersPage() {
   const [searchByPhone, setSearchByPhone] = useState("");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [activeSearchType, setActiveSearchType] = useState<"name" | "email" | "phone">("name");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "create" | "edit" | "detail">("list");
 
@@ -47,7 +48,7 @@ export default function CustomersPage() {
 
   useEffect(() => {
     fetchCustomers();
-  }, [page, search]);
+  }, [page, search, activeSearchType]);
 
   const fetchCustomers = async () => {
     try {
@@ -56,9 +57,12 @@ export default function CustomersPage() {
         page: page.toString(),
         size: "20",
       });
-      if (search) {
-        params.append("searchKeyword", search);
+      
+      // Chỉ thêm searchKeyword khi có giá trị
+      if (search && search.trim()) {
+        params.append("searchKeyword", search.trim());
       }
+      
       const response = await apiClient.get<PaginatedResponse<Customer>>(
         `/customers?${params.toString()}`
       );
@@ -66,54 +70,32 @@ export default function CustomersPage() {
       setTotalPages(response.data.totalPages);
     } catch (error) {
       console.error("Error fetching customers:", error);
+      toast.error("Lỗi khi tải danh sách khách hàng");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFindByEmail = async () => {
-    if (!searchByEmail.trim()) {
-      toast.error("Vui lòng nhập email");
-      return;
-    }
-    try {
-      setLoading(true);
-      const response = await apiClient.get<Customer>(`/customers/by-email?email=${encodeURIComponent(searchByEmail.trim())}`);
-      if (response.data) {
-        setCustomers([response.data]);
-        setTotalPages(1);
-        setPage(0);
-        toast.success("Tìm thấy khách hàng!");
-      }
-    } catch (error: any) {
-      console.error("Error finding customer by email:", error);
-      toast.error(error.response?.data?.message || "Không tìm thấy khách hàng với email này");
-      setCustomers([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFindByPhone = async () => {
-    if (!searchByPhone.trim()) {
-      toast.error("Vui lòng nhập số điện thoại");
-      return;
-    }
-    try {
-      setLoading(true);
-      const response = await apiClient.get<Customer>(`/customers/by-phone?phone=${encodeURIComponent(searchByPhone.trim())}`);
-      if (response.data) {
-        setCustomers([response.data]);
-        setTotalPages(1);
-        setPage(0);
-        toast.success("Tìm thấy khách hàng!");
-      }
-    } catch (error: any) {
-      console.error("Error finding customer by phone:", error);
-      toast.error(error.response?.data?.message || "Không tìm thấy khách hàng với số điện thoại này");
-      setCustomers([]);
-    } finally {
-      setLoading(false);
+  const handleSearchChange = (value: string, type: "name" | "email" | "phone") => {
+    setActiveSearchType(type);
+    setPage(0);
+    
+    if (type === "name") {
+      setSearch(value);
+      setSearchByEmail("");
+      setSearchByPhone("");
+    } else if (type === "email") {
+      setSearchByEmail(value);
+      setSearchByPhone("");
+      
+      // Tìm kiếm realtime cho email
+      setSearch(value);
+    } else if (type === "phone") {
+      setSearchByPhone(value);
+      setSearchByEmail("");
+      
+      // Tìm kiếm realtime cho phone - không cần validation
+      setSearch(value);
     }
   };
 
@@ -200,20 +182,15 @@ export default function CustomersPage() {
       <Card>
         <CardHeader>
           <CardTitle>Tìm kiếm</CardTitle>
-          <CardDescription>Tìm kiếm theo tên, email hoặc số điện thoại</CardDescription>
+          <CardDescription>Tìm kiếm theo tên, email hoặc số điện thoại (realtime)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Tìm kiếm khách hàng theo tên..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(0);
-                setSearchByEmail("");
-                setSearchByPhone("");
-              }}
+              value={activeSearchType === "name" ? search : ""}
+              onChange={(e) => handleSearchChange(e.target.value, "name")}
               className="pl-9"
             />
           </div>
@@ -223,52 +200,24 @@ export default function CustomersPage() {
                 <Mail className="h-4 w-4" />
                 Tìm theo Email
               </label>
-              <div className="flex gap-2">
-                <Input
-                  type="email"
-                  placeholder="Nhập email..."
-                  value={searchByEmail}
-                  onChange={(e) => {
-                    setSearchByEmail(e.target.value);
-                    setSearch("");
-                    setSearchByPhone("");
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleFindByEmail();
-                    }
-                  }}
-                />
-                <Button onClick={handleFindByEmail} variant="outline">
-                  Tìm
-                </Button>
-              </div>
+              <Input
+                type="email"
+                placeholder="Nhập email..."
+                value={searchByEmail}
+                onChange={(e) => handleSearchChange(e.target.value, "email")}
+              />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2">
                 <Phone className="h-4 w-4" />
                 Tìm theo Số điện thoại
               </label>
-              <div className="flex gap-2">
-                <Input
-                  type="tel"
-                  placeholder="Nhập số điện thoại..."
-                  value={searchByPhone}
-                  onChange={(e) => {
-                    setSearchByPhone(e.target.value);
-                    setSearch("");
-                    setSearchByEmail("");
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleFindByPhone();
-                    }
-                  }}
-                />
-                <Button onClick={handleFindByPhone} variant="outline">
-                  Tìm
-                </Button>
-              </div>
+              <Input
+                type="tel"
+                placeholder="Nhập số điện thoại (01, 02, 09...)..."
+                value={searchByPhone}
+                onChange={(e) => handleSearchChange(e.target.value, "phone")}
+              />
             </div>
           </div>
         </CardContent>

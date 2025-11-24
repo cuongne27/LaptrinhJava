@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { apiClient } from "@/lib/api/client";
 import { EntityModal } from "@/components/entity/EntityModal";
 import { Button } from "@/components/ui/button";
@@ -10,34 +10,42 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import toast from "react-hot-toast";
-import { formatCurrency, formatDateTime, getStatusColor } from "@/lib/utils";
-import type { PaginatedResponse } from "@/types";
+import { formatDateTime, getStatusColor } from "@/lib/utils";
+import type { PaginatedResponse, Customer, Dealer, Product } from "@/types";
 import { Search, Plus, Eye, Edit, Trash2, RefreshCw, X } from "lucide-react";
 
 interface Appointment {
   id: number;
-  appointmentDate: string;
   appointmentTime: string;
   status: string;
   customerId: number;
   customerName: string;
-  staffUserId: number;
-  staffUserName: string;
+  customerPhone?: string;
+  staffUserId?: number | null;
+  staffName?: string;
   productId: number;
   productName: string;
   dealerId: number;
   dealerName: string;
   notes?: string;
-  createdAt: string;
+  isUpcoming?: boolean;
+  isToday?: boolean;
+  hoursUntil?: number;
+}
+
+interface StaffUserOption {
+  userId: number;
+  fullName: string;
+  email?: string;
+  dealerName?: string;
 }
 
 const appointmentSchema = z.object({
   customerId: z.number().min(1, "Vui lòng chọn khách hàng"),
-  staffUserId: z.number().min(1, "Vui lòng chọn nhân viên"),
-  productId: z.number().optional(),
+  staffUserId: z.number().optional(),
+  productId: z.number().min(1, "Vui lòng chọn sản phẩm"),
   dealerId: z.number().min(1, "Vui lòng chọn đại lý"),
-  appointmentDate: z.string().min(1, "Vui lòng chọn ngày"),
-  appointmentTime: z.string().min(1, "Vui lòng chọn giờ"),
+  appointmentTime: z.string().min(1, "Vui lòng chọn thời gian hẹn"),
   notes: z.string().optional(),
 });
 
@@ -51,6 +59,28 @@ export default function AppointmentsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "create" | "edit" | "detail">("list");
+  const [customerOptions, setCustomerOptions] = useState<Customer[]>([]);
+  const [staffOptions, setStaffOptions] = useState<StaffUserOption[]>([]);
+  const [dealerOptions, setDealerOptions] = useState<Dealer[]>([]);
+  const [productOptions, setProductOptions] = useState<Product[]>([]);
+  const [metadataLoading, setMetadataLoading] = useState(false);
+
+  const getLocalDateTimeValue = (value?: string | null) => {
+    if (!value) {
+      return "";
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+    const tzOffset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+  };
+
+  const toIsoWithOffset = (value: string) => {
+    const date = new Date(value);
+    return date.toISOString();
+  };
 
   const {
     register,
@@ -63,11 +93,7 @@ export default function AppointmentsPage() {
     resolver: zodResolver(appointmentSchema),
   });
 
-  useEffect(() => {
-    fetchAppointments();
-  }, [page, filterType]);
-
-  const fetchAppointments = async () => {
+  const fetchAppointments = useCallback(async () => {
     try {
       setLoading(true);
       let url = `/appointments`;
@@ -97,15 +123,51 @@ export default function AppointmentsPage() {
     } finally {
       setLoading(false);
     }
+  }, [filterType, page]);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
+
+  useEffect(() => {
+    loadMetadata();
+  }, []);
+
+  const loadMetadata = async () => {
+    try {
+      setMetadataLoading(true);
+      const query = new URLSearchParams({
+        page: "0",
+        size: "100",
+      }).toString();
+
+      const [customersRes, staffRes, dealersRes, productsRes] = await Promise.all([
+        apiClient.get<PaginatedResponse<Customer>>(`/customers?${query}`),
+        apiClient.get<PaginatedResponse<StaffUserOption>>(`/users?roleName=DEALER_STAFF&${query}`),
+        apiClient.get<PaginatedResponse<Dealer>>(`/dealers/filter?${query}`),
+        apiClient.get<PaginatedResponse<Product>>(`/products?${query}`),
+      ]);
+
+      setCustomerOptions(customersRes.data.content || []);
+      setStaffOptions(staffRes.data.content || []);
+      setDealerOptions(dealersRes.data.content || []);
+      setProductOptions(productsRes.data.content || []);
+    } catch (error) {
+      console.error("Error loading appointment metadata:", error);
+      toast.error("Không thể tải dữ liệu hỗ trợ lịch hẹn");
+    } finally {
+      setMetadataLoading(false);
+    }
   };
 
   const handleCreate = () => {
     reset({
       customerId: 0,
       staffUserId: 0,
+      productId: 0,
       dealerId: 0,
-      appointmentDate: "",
       appointmentTime: "",
+      notes: "",
     });
     setSelectedAppointment(null);
     setViewMode("create");
@@ -114,12 +176,11 @@ export default function AppointmentsPage() {
   const handleEdit = (appointment: Appointment) => {
     reset({
       customerId: appointment.customerId,
-      staffUserId: appointment.staffUserId,
+      staffUserId: appointment.staffUserId ?? 0,
       productId: appointment.productId,
       dealerId: appointment.dealerId,
-      appointmentDate: appointment.appointmentDate,
-      appointmentTime: appointment.appointmentTime,
-      notes: appointment.notes,
+      appointmentTime: getLocalDateTimeValue(appointment.appointmentTime),
+      notes: appointment.notes || "",
     });
     setSelectedAppointment(appointment);
     setViewMode("edit");
@@ -160,11 +221,18 @@ export default function AppointmentsPage() {
 
   const onSubmit = async (data: AppointmentForm) => {
     try {
+      const payload = {
+        ...data,
+        appointmentTime: toIsoWithOffset(data.appointmentTime),
+        staffUserId: data.staffUserId && data.staffUserId > 0 ? data.staffUserId : undefined,
+        notes: data.notes?.trim() ? data.notes : undefined,
+      };
+
       if (viewMode === "create") {
-        await apiClient.post("/appointments", data);
+        await apiClient.post("/appointments", payload);
         toast.success("Tạo lịch hẹn thành công!");
       } else if (viewMode === "edit" && selectedAppointment) {
-        await apiClient.put(`/appointments/${selectedAppointment.id}`, data);
+        await apiClient.put(`/appointments/${selectedAppointment.id}`, payload);
         toast.success("Cập nhật thành công!");
       }
       setViewMode("list");
@@ -264,7 +332,7 @@ export default function AppointmentsPage() {
                     </span>
                   </div>
                   <CardDescription>
-                    {formatDateTime(appointment.appointmentDate)}
+                    {formatDateTime(appointment.appointmentTime)}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -275,7 +343,9 @@ export default function AppointmentsPage() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Nhân viên</span>
-                      <span className="font-medium">{appointment.staffUserName}</span>
+                      <span className="font-medium">
+                        {appointment.staffName || "Chưa phân công"}
+                      </span>
                     </div>
                     {appointment.productName && (
                       <div className="flex items-center justify-between">
@@ -373,47 +443,88 @@ export default function AppointmentsPage() {
       >
         <form className="space-y-4">
           <div>
-            <label className="text-sm font-medium">Khách hàng ID *</label>
-            <Input
-              type="number"
+            <label className="text-sm font-medium">Khách hàng *</label>
+            <select
               {...register("customerId", { valueAsNumber: true })}
-              className="mt-1"
-            />
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+              disabled={metadataLoading}
+            >
+              <option value={0}>Chọn khách hàng</option>
+              {customerOptions.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.fullName}
+                  {customer.phoneNumber ? ` (${customer.phoneNumber})` : ""}
+                </option>
+              ))}
+            </select>
             {errors.customerId && (
               <p className="text-sm text-destructive mt-1">{errors.customerId.message}</p>
             )}
           </div>
           <div>
-            <label className="text-sm font-medium">Nhân viên ID *</label>
-            <Input
-              type="number"
-              {...register("staffUserId", { valueAsNumber: true })}
-              className="mt-1"
-            />
-            {errors.staffUserId && (
-              <p className="text-sm text-destructive mt-1">{errors.staffUserId.message}</p>
-            )}
+            <label className="text-sm font-medium">Nhân viên phụ trách</label>
+            <select
+              {...register("staffUserId", {
+                setValueAs: (value) => (value === "" ? undefined : Number(value)),
+              })}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+              disabled={metadataLoading}
+            >
+              <option value="">Tự động phân công</option>
+              {staffOptions.map((staff) => (
+                <option key={staff.userId} value={staff.userId}>
+                  {staff.fullName}
+                  {staff.dealerName ? ` • ${staff.dealerName}` : ""}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
-            <label className="text-sm font-medium">Đại lý ID *</label>
-            <Input
-              type="number"
+            <label className="text-sm font-medium">Đại lý *</label>
+            <select
               {...register("dealerId", { valueAsNumber: true })}
-              className="mt-1"
-            />
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+              disabled={metadataLoading}
+            >
+              <option value={0}>Chọn đại lý</option>
+              {dealerOptions.map((dealer) => (
+                <option key={dealer.id} value={dealer.id}>
+                  {dealer.dealerName}
+                </option>
+              ))}
+            </select>
             {errors.dealerId && (
               <p className="text-sm text-destructive mt-1">{errors.dealerId.message}</p>
             )}
           </div>
           <div>
-            <label className="text-sm font-medium">Ngày hẹn *</label>
+            <label className="text-sm font-medium">Sản phẩm quan tâm *</label>
+            <select
+              {...register("productId", { valueAsNumber: true })}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+              disabled={metadataLoading}
+            >
+              <option value={0}>Chọn sản phẩm</option>
+              {productOptions.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.productName}
+                  {product.version ? ` • ${product.version}` : ""}
+                </option>
+              ))}
+            </select>
+            {errors.productId && (
+              <p className="text-sm text-destructive mt-1">{errors.productId.message}</p>
+            )}
+          </div>
+          <div>
+            <label className="text-sm font-medium">Thời gian hẹn *</label>
             <Input
               type="datetime-local"
-              {...register("appointmentDate")}
+              {...register("appointmentTime")}
               className="mt-1"
             />
-            {errors.appointmentDate && (
-              <p className="text-sm text-destructive mt-1">{errors.appointmentDate.message}</p>
+            {errors.appointmentTime && (
+              <p className="text-sm text-destructive mt-1">{errors.appointmentTime.message}</p>
             )}
           </div>
           <div>
@@ -459,7 +570,7 @@ export default function AppointmentsPage() {
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Ngày giờ hẹn</label>
-              <p>{formatDateTime(selectedAppointment.appointmentDate)}</p>
+              <p>{formatDateTime(selectedAppointment.appointmentTime)}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Khách hàng</label>
@@ -467,7 +578,7 @@ export default function AppointmentsPage() {
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Nhân viên</label>
-              <p>{selectedAppointment.staffUserName}</p>
+              <p>{selectedAppointment.staffName || "Chưa phân công"}</p>
             </div>
             {selectedAppointment.productName && (
               <div>

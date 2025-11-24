@@ -27,10 +27,13 @@ import {
   ChevronRight,
   Menu,
   GitCompare,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useThemeMode } from "@/components/theme/ThemeProvider";
 
 const menuItems = [
   {
@@ -149,6 +152,7 @@ export function Sidebar() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const { theme, toggleTheme } = useThemeMode();
 
   useEffect(() => {
     setMounted(true);
@@ -260,18 +264,44 @@ export function Sidebar() {
           <Zap className="h-6 w-6 text-primary flex-shrink-0" />
           {!collapsed && <span className="text-xl font-bold">EVM</span>}
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleCollapse}
-          className="h-8 w-8"
-        >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </Button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={toggleTheme}
+            type="button"
+            className={cn(
+              "relative h-8 w-14 rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+              theme === "dark"
+                ? "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 shadow-inner"
+                : "bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 shadow-inner"
+            )}
+            title={theme === "dark" ? "Chế độ sáng" : "Chế độ tối"}
+          >
+            <span className="absolute inset-y-0 left-2 flex items-center text-white/80">
+              <Sun className="h-3 w-3" />
+            </span>
+            <span className="absolute inset-y-0 right-2 flex items-center text-white/80">
+              <Moon className="h-3 w-3" />
+            </span>
+            <span
+              className={cn(
+                "absolute top-1 left-1 h-6 w-6 rounded-full bg-background shadow-lg transition-transform duration-200 ease-out",
+                theme === "dark" ? "translate-x-6" : "translate-x-0"
+              )}
+            />
+          </button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleCollapse}
+            className="h-8 w-8"
+          >
+            {collapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
       </div>
 
       <nav className="flex-1 space-y-2 p-4 overflow-y-auto">

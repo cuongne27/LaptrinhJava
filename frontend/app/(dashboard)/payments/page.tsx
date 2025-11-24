@@ -28,16 +28,34 @@ interface Payment {
   createdAt: string;
 }
 
+type PaymentApiResponse = Payment & { paymentId?: number };
+
 const paymentSchema = z.object({
   orderId: z.number().min(1, "Vui lòng chọn đơn hàng"),
   amount: z.number().min(0.01, "Số tiền phải lớn hơn 0"),
   paymentMethod: z.string().min(1, "Vui lòng chọn phương thức thanh toán"),
   paymentType: z.string().min(1, "Vui lòng chọn loại thanh toán"),
   referenceNumber: z.string().optional(),
-  paymentDate: z.string().optional(),
+  paymentDate: z.string().min(1, "Vui lòng chọn ngày thanh toán"),
 });
 
 type PaymentForm = z.infer<typeof paymentSchema>;
+
+const paymentMethodOptions = [
+  { value: "CASH", label: "Tiền mặt" },
+  { value: "BANK_TRANSFER", label: "Chuyển khoản" },
+  { value: "CREDIT_CARD", label: "Thẻ tín dụng" },
+  { value: "COMPANY_TRANSFER", label: "Chuyển khoản công ty" },
+  { value: "QR_CODE", label: "Quét mã QR" },
+  { value: "INSTALLMENT", label: "Thanh toán trả góp" },
+];
+
+const paymentTypeOptions = [
+  { value: "ORDER_PAYMENT", label: "Thanh toán đơn hàng" },
+  { value: "DEPOSIT", label: "Đặt cọc" },
+  { value: "INSTALLMENT", label: "Trả góp" },
+  { value: "FINAL_PAYMENT", label: "Thanh toán cuối" },
+];
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -46,6 +64,7 @@ export default function PaymentsPage() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [selectedPaymentId, setSelectedPaymentId] = useState<number | null>(null); 
   const [viewMode, setViewMode] = useState<"list" | "create" | "edit" | "detail">("list");
 
   const {
@@ -54,6 +73,7 @@ export default function PaymentsPage() {
     reset,
     trigger,
     getValues,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<PaymentForm>({
     resolver: zodResolver(paymentSchema),
@@ -61,7 +81,7 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     fetchPayments();
-  }, [page]);
+  }, [page, search]);
 
   const fetchPayments = async () => {
     try {
@@ -73,10 +93,14 @@ export default function PaymentsPage() {
       if (search) {
         params.append("referenceNumber", search);
       }
-      const response = await apiClient.get<PaginatedResponse<Payment>>(
+      const response = await apiClient.get<PaginatedResponse<PaymentApiResponse>>(
         `/payments?${params.toString()}`
       );
-      setPayments(response.data.content);
+      const normalizedPayments = response.data.content.map((payment) => ({
+        ...payment,
+        id: payment.id ?? payment.paymentId ?? 0,
+      }));
+      setPayments(normalizedPayments);
       setTotalPages(response.data.totalPages);
     } catch (error) {
       console.error("Error fetching payments:", error);
@@ -87,26 +111,40 @@ export default function PaymentsPage() {
   };
 
   const handleCreate = () => {
+    setSelectedPayment(null);
     reset({
       orderId: 0,
       amount: 0,
-      paymentMethod: "",
-      paymentType: "",
+      paymentMethod: paymentMethodOptions[0]?.value ?? "",
+      paymentType: paymentTypeOptions[0]?.value ?? "",
+      referenceNumber: "",
+      paymentDate: new Date().toISOString().slice(0, 10),
     });
-    setSelectedPayment(null);
     setViewMode("create");
   };
 
   const handleEdit = (payment: Payment) => {
-    reset({
-      orderId: payment.orderId,
-      amount: payment.amount,
-      paymentMethod: payment.paymentMethod,
-      paymentType: payment.paymentType,
-      referenceNumber: payment.referenceNumber,
-      paymentDate: payment.paymentDate,
-    });
+    console.log("🔍 Selected payment:", payment);
     setSelectedPayment(payment);
+    const paymentId = payment.id ?? (payment as unknown as { paymentId?: number }).paymentId;
+    setSelectedPaymentId(paymentId ?? null);
+
+    const paymentCopy = { ...payment };
+    setSelectedPayment(paymentCopy);
+    
+    // Set form values
+    setValue("orderId", Number(payment.orderId));
+    setValue("amount", Number(payment.amount));
+    setValue("paymentMethod", payment.paymentMethod);
+    setValue("paymentType", payment.paymentType);
+    setValue("referenceNumber", payment.referenceNumber || "");
+    setValue(
+      "paymentDate",
+      payment.paymentDate
+        ? payment.paymentDate.slice(0, 10)
+        : new Date().toISOString().slice(0, 10)
+    );
+    
     setViewMode("edit");
   };
 
@@ -157,24 +195,47 @@ export default function PaymentsPage() {
 
   const onSubmit = async (data: PaymentForm) => {
     try {
+      console.log("📤 Form data:", data);
+      
       if (viewMode === "create") {
         await apiClient.post("/payments", data);
         toast.success("Tạo thanh toán thành công!");
-      } else if (viewMode === "edit" && selectedPayment) {
-        await apiClient.put(`/payments/${selectedPayment.id}`, data);
+      } else if (viewMode === "edit") {
+        if (!selectedPaymentId) {
+          toast.error("Không tìm thấy thanh toán cần sửa");
+          console.error("❌ selectedPaymentId is null:", {
+            selectedPayment,
+            selectedPaymentId,
+          });
+          return;
+        }
+        
+        console.log("📤 Updating payment ID:", selectedPaymentId);
+        await apiClient.put(`/payments/${selectedPaymentId}`, data); // ✅ DÙNG selectedPaymentId
         toast.success("Cập nhật thành công!");
       }
+      
       setViewMode("list");
+      setSelectedPayment(null);
+      setSelectedPaymentId(null); // ✅ RESET
       reset();
       fetchPayments();
     } catch (error: any) {
-      console.error("Error saving payment:", error);
+      console.error("❌ Error saving payment:", error);
+      console.error("❌ Response:", error.response?.data);
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||
         "Không thể lưu thanh toán";
       toast.error(errorMessage);
     }
+  };
+
+  const handleModalClose = () => {
+    setViewMode("list");
+    setSelectedPayment(null);
+    setSelectedPaymentId(null); // ✅ RESET
+    reset();
   };
 
   return (
@@ -311,19 +372,10 @@ export default function PaymentsPage() {
       <EntityModal
         title={viewMode === "create" ? "Thêm thanh toán mới" : "Sửa thanh toán"}
         open={viewMode === "create" || viewMode === "edit"}
-        onClose={() => {
-          setViewMode("list");
-          reset();
-        }}
+        onClose={handleModalClose}
         footer={
           <>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setViewMode("list");
-                reset();
-              }}
-            >
+            <Button variant="outline" onClick={handleModalClose}>
               Hủy
             </Button>
             <Button
@@ -343,7 +395,7 @@ export default function PaymentsPage() {
           </>
         }
       >
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
           <div>
             <label className="text-sm font-medium">Đơn hàng ID *</label>
             <Input
@@ -374,10 +426,11 @@ export default function PaymentsPage() {
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
             >
               <option value="">Chọn phương thức</option>
-              <option value="CASH">Tiền mặt</option>
-              <option value="BANK_TRANSFER">Chuyển khoản</option>
-              <option value="CREDIT_CARD">Thẻ tín dụng</option>
-              <option value="DEBIT_CARD">Thẻ ghi nợ</option>
+              {paymentMethodOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
             {errors.paymentMethod && (
               <p className="text-sm text-destructive mt-1">{errors.paymentMethod.message}</p>
@@ -390,12 +443,21 @@ export default function PaymentsPage() {
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
             >
               <option value="">Chọn loại</option>
-              <option value="FULL">Thanh toán đầy đủ</option>
-              <option value="PARTIAL">Thanh toán một phần</option>
-              <option value="DEPOSIT">Đặt cọc</option>
+              {paymentTypeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
             {errors.paymentType && (
               <p className="text-sm text-destructive mt-1">{errors.paymentType.message}</p>
+            )}
+          </div>
+          <div>
+            <label className="text-sm font-medium">Ngày thanh toán *</label>
+            <Input type="date" {...register("paymentDate")} className="mt-1" />
+            {errors.paymentDate && (
+              <p className="text-sm text-destructive mt-1">{errors.paymentDate.message}</p>
             )}
           </div>
           <div>
@@ -409,10 +471,7 @@ export default function PaymentsPage() {
       <EntityModal
         title="Chi tiết thanh toán"
         open={viewMode === "detail" && selectedPayment !== null}
-        onClose={() => {
-          setViewMode("list");
-          setSelectedPayment(null);
-        }}
+        onClose={handleModalClose}
         footer={
           <Button onClick={() => selectedPayment && handleEdit(selectedPayment)}>
             <Edit className="mr-2 h-4 w-4" />
@@ -458,4 +517,3 @@ export default function PaymentsPage() {
     </div>
   );
 }
-
