@@ -2,7 +2,12 @@ package com.evm.backend.controller;
 
 import com.evm.backend.dto.request.ProductRequest;
 import com.evm.backend.dto.response.ProductDetailResponse;
+import com.evm.backend.dto.response.ProductListResponse;
 import com.evm.backend.service.ProductService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -29,6 +34,81 @@ import org.springframework.web.bind.annotation.*;
 public class ProductCrudController {
 
     private final ProductService productService;
+
+    /**
+     * GET ALL - Lấy danh sách tất cả sản phẩm (có phân trang)
+     * GET /api/products
+     */
+    // <<< CHỨC NĂNG: LẤY DANH SÁCH TẤT CẢ SẢN PHẨM (CÓ PHÂN TRANG)
+    // <<< ĐẦU API: GET /api/products
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
+    @GetMapping
+    @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
+    @Operation(
+            summary = "Get all products",
+            description = "Get all products with pagination and search"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved products"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - User does not have BRAND_MANAGER or ADMIN role")
+    })
+    public ResponseEntity<Page<ProductListResponse>> getAllProducts(
+            @Parameter(description = "Page number (0-indexed)")
+            @RequestParam(defaultValue = "0") Integer page,
+
+            @Parameter(description = "Page size")
+            @RequestParam(defaultValue = "20") Integer size,
+
+            @Parameter(description = "Search keyword for product name")
+            @RequestParam(required = false) String searchKeyword,
+
+            @Parameter(description = "Sort by field (id, productName, msrp)")
+            @RequestParam(defaultValue = "id") String sortBy,
+
+            @Parameter(description = "Sort direction (asc, desc)")
+            @RequestParam(defaultValue = "asc") String direction
+    ) {
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("desc")
+                ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+
+        Page<ProductListResponse> products;
+        if (searchKeyword != null && !searchKeyword.trim().isEmpty()) {
+            products = productService.getAllProducts(searchKeyword.trim(), pageable);
+        } else {
+            products = productService.getAllProducts(pageable);
+        }
+
+        return ResponseEntity.ok(products);
+    }
+
+    /**
+     * GET BY ID - Lấy chi tiết sản phẩm
+     * GET /api/products/{productId}
+     */
+    // <<< CHỨC NĂNG: XEM CHI TIẾT SẢN PHẨM
+    // <<< ĐẦU API: GET /api/products/{productId}
+    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
+    @GetMapping("/{productId}")
+    @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
+    @Operation(
+            summary = "Get product by ID",
+            description = "Get detailed information about a specific product"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved product"),
+            @ApiResponse(responseCode = "404", description = "Product not found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - User does not have BRAND_MANAGER or ADMIN role")
+    })
+    public ResponseEntity<ProductDetailResponse> getProductById(
+            @Parameter(description = "Product ID", required = true)
+            @PathVariable Long productId
+    ) {
+        ProductDetailResponse product = productService.getProductById(productId);
+        return ResponseEntity.ok(product);
+    }
 
     /**
      * CREATE - Tạo sản phẩm mới

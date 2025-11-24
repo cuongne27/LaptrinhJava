@@ -5,6 +5,7 @@ import com.evm.backend.dto.request.ProductRequest;
 import com.evm.backend.dto.response.ProductDetailResponse;
 import com.evm.backend.dto.response.ProductListResponse;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -12,6 +13,23 @@ import org.springframework.transaction.annotation.Transactional;
  * UC-DL-01: Xem danh mục và thông tin chi tiết xe
  */
 public interface ProductService {
+
+    /**
+     * Get all products with pagination (for CRUD management)
+     *
+     * @param pageable Pagination parameters
+     * @return Page of ProductListResponse
+     */
+    Page<ProductListResponse> getAllProducts(Pageable pageable);
+
+    /**
+     * Get all products with pagination and search (for CRUD management)
+     *
+     * @param searchKeyword Search keyword for product name
+     * @param pageable Pagination parameters
+     * @return Page of ProductListResponse
+     */
+    Page<ProductListResponse> getAllProducts(String searchKeyword, Pageable pageable);
 
     /**
      * Get product catalog with filtering and pagination
@@ -30,6 +48,14 @@ public interface ProductService {
      * @return ProductDetailResponse with full product information
      */
     ProductDetailResponse getProductDetail(String username, Long productId);
+
+    /**
+     * Get product detail by ID (for CRUD management, no dealer context)
+     *
+     * @param productId Product ID
+     * @return ProductDetailResponse with full product information
+     */
+    ProductDetailResponse getProductById(Long productId);
 
     ProductDetailResponse createProduct(ProductRequest productRequest);
 

@@ -15,7 +15,7 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SupportTicketDetailResponse {
-    private Long ticketId;
+    private Long id;
     private String title;
     private String description;
     private String status;

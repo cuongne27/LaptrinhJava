@@ -4,6 +4,7 @@ import com.evm.backend.entity.Brand;
 import com.evm.backend.entity.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,6 +21,17 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findByBrandId(Integer brandId);
 
     List<Product> findByProductNameContainingIgnoreCase(String keyword);
+
+    // Override findAll to fetch Brand relationship - only active products
+    @Override
+    @EntityGraph(attributePaths = {"brand"})
+    @Query("SELECT p FROM Product p WHERE p.isActive = true")
+    Page<Product> findAll(Pageable pageable);
+
+    // Find products by name with Brand fetched - only active products
+    @EntityGraph(attributePaths = {"brand"})
+    @Query("SELECT p FROM Product p WHERE p.isActive = true AND LOWER(p.productName) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    Page<Product> findByProductNameContainingIgnoreCaseWithBrand(@Param("keyword") String keyword, Pageable pageable);
 
     List<Product> findByVersion(String version);
 

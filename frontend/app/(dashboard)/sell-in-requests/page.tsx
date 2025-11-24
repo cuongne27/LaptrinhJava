@@ -31,10 +31,15 @@ interface SellInRequest {
 
 const sellInRequestSchema = z.object({
   dealerId: z.number().min(1, "Vui lòng chọn đại lý"),
+  requestDate: z.string().min(1, "Vui lòng chọn ngày yêu cầu"),
+  expectedDeliveryDate: z.string().optional(),
+  deliveryAddress: z.string().optional(),
+  notes: z.string().optional(),
+  // Items as separate fields (will be transformed)
   productId: z.number().min(1, "Vui lòng chọn sản phẩm"),
   quantity: z.number().min(1, "Số lượng phải lớn hơn 0"),
   color: z.string().min(1, "Vui lòng chọn màu"),
-  expectedDeliveryDate: z.string().optional(),
+  itemNotes: z.string().optional(),
 });
 
 type SellInRequestForm = z.infer<typeof sellInRequestSchema>;
@@ -56,6 +61,13 @@ export default function SellInRequestsPage() {
     formState: { errors, isSubmitting },
   } = useForm<SellInRequestForm>({
     resolver: zodResolver(sellInRequestSchema),
+    defaultValues: {
+      dealerId: 0,
+      requestDate: new Date().toISOString().split('T')[0],
+      productId: 0,
+      quantity: 1,
+      color: "",
+    }
   });
 
   useEffect(() => {
@@ -85,9 +97,14 @@ export default function SellInRequestsPage() {
   const handleCreate = () => {
     reset({
       dealerId: 0,
+      requestDate: new Date().toISOString().split('T')[0],
       productId: 0,
-      quantity: 0,
+      quantity: 1,
       color: "",
+      expectedDeliveryDate: "",
+      deliveryAddress: "",
+      notes: "",
+      itemNotes: "",
     });
     setSelectedRequest(null);
     setViewMode("create");
@@ -96,10 +113,11 @@ export default function SellInRequestsPage() {
   const handleEdit = (request: SellInRequest) => {
     reset({
       dealerId: request.dealerId,
+      requestDate: request.requestDate,
       productId: request.productId,
       quantity: request.quantity,
       color: request.color,
-      expectedDeliveryDate: request.expectedDeliveryDate,
+      expectedDeliveryDate: request.expectedDeliveryDate || "",
     });
     setSelectedRequest(request);
     setViewMode("edit");
@@ -167,19 +185,49 @@ export default function SellInRequestsPage() {
   };
 
   const onSubmit = async (data: SellInRequestForm) => {
+    console.log("Form data:", data);
+    
     try {
+      // ✅ Transform to backend expected format
+      const payload = {
+        dealerId: data.dealerId,
+        requestDate: data.requestDate,
+        expectedDeliveryDate: data.expectedDeliveryDate || undefined,
+        deliveryAddress: data.deliveryAddress || undefined,
+        notes: data.notes || undefined,
+        items: [
+          {
+            productId: data.productId,
+            quantity: data.quantity,
+            color: data.color,
+            notes: data.itemNotes || undefined,
+          }
+        ]
+      };
+
+      // Remove undefined values
+      Object.keys(payload).forEach(key => {
+        if (payload[key as keyof typeof payload] === undefined) {
+          delete payload[key as keyof typeof payload];
+        }
+      });
+
+      console.log("Payload being sent:", JSON.stringify(payload, null, 2));
+
       if (viewMode === "create") {
-        await apiClient.post("/sell-in-requests", data);
+        await apiClient.post("/sell-in-requests", payload);
         toast.success("Tạo yêu cầu thành công!");
       } else if (viewMode === "edit" && selectedRequest) {
-        await apiClient.put(`/sell-in-requests/${selectedRequest.id}`, data);
+        await apiClient.put(`/sell-in-requests/${selectedRequest.id}`, payload);
         toast.success("Cập nhật thành công!");
       }
+      
       setViewMode("list");
       reset();
       fetchRequests();
     } catch (error: any) {
       console.error("Error saving request:", error);
+      console.error("Error response:", error.response?.data);
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||
@@ -341,7 +389,7 @@ export default function SellInRequestsPage() {
           </>
         }
       >
-        <form className="space-y-4">
+        <div className="space-y-4">
           <div>
             <label className="text-sm font-medium">Đại lý ID *</label>
             <Input
@@ -353,40 +401,95 @@ export default function SellInRequestsPage() {
               <p className="text-sm text-destructive mt-1">{errors.dealerId.message}</p>
             )}
           </div>
+          
           <div>
-            <label className="text-sm font-medium">Sản phẩm ID *</label>
+            <label className="text-sm font-medium">Ngày yêu cầu *</label>
             <Input
-              type="number"
-              {...register("productId", { valueAsNumber: true })}
+              type="date"
+              {...register("requestDate")}
               className="mt-1"
             />
-            {errors.productId && (
-              <p className="text-sm text-destructive mt-1">{errors.productId.message}</p>
+            {errors.requestDate && (
+              <p className="text-sm text-destructive mt-1">{errors.requestDate.message}</p>
             )}
           </div>
-          <div>
-            <label className="text-sm font-medium">Số lượng *</label>
-            <Input
-              type="number"
-              {...register("quantity", { valueAsNumber: true })}
-              className="mt-1"
-            />
-            {errors.quantity && (
-              <p className="text-sm text-destructive mt-1">{errors.quantity.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="text-sm font-medium">Màu *</label>
-            <Input {...register("color")} className="mt-1" />
-            {errors.color && (
-              <p className="text-sm text-destructive mt-1">{errors.color.message}</p>
-            )}
-          </div>
+
           <div>
             <label className="text-sm font-medium">Ngày giao dự kiến</label>
-            <Input type="date" {...register("expectedDeliveryDate")} className="mt-1" />
+            <Input 
+              type="date" 
+              {...register("expectedDeliveryDate")} 
+              className="mt-1" 
+            />
           </div>
-        </form>
+
+          <div className="border-t pt-4">
+            <h3 className="font-semibold mb-3">Thông tin sản phẩm</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Sản phẩm ID *</label>
+                <Input
+                  type="number"
+                  {...register("productId", { valueAsNumber: true })}
+                  className="mt-1"
+                />
+                {errors.productId && (
+                  <p className="text-sm text-destructive mt-1">{errors.productId.message}</p>
+                )}
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Số lượng *</label>
+                <Input
+                  type="number"
+                  {...register("quantity", { valueAsNumber: true })}
+                  className="mt-1"
+                />
+                {errors.quantity && (
+                  <p className="text-sm text-destructive mt-1">{errors.quantity.message}</p>
+                )}
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Màu *</label>
+                <Input {...register("color")} className="mt-1" />
+                {errors.color && (
+                  <p className="text-sm text-destructive mt-1">{errors.color.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Ghi chú sản phẩm</label>
+                <Input {...register("itemNotes")} className="mt-1" placeholder="Ghi chú cho sản phẩm này" />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t pt-4">
+            <h3 className="font-semibold mb-3">Thông tin bổ sung</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Địa chỉ giao hàng</label>
+                <Input 
+                  {...register("deliveryAddress")} 
+                  className="mt-1" 
+                  placeholder="Để trống sẽ dùng địa chỉ của đại lý"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Ghi chú chung</label>
+                <textarea
+                  {...register("notes")}
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+                  placeholder="Ghi chú chung cho yêu cầu"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </EntityModal>
 
       {/* Detail Modal */}

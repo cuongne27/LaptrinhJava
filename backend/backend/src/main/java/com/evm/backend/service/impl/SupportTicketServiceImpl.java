@@ -480,7 +480,7 @@ public class SupportTicketServiceImpl implements SupportTicketService {
         }
 
         return SupportTicketListResponse.builder()
-                .ticketId(t.getId())
+                .id(t.getId())
                 .title(t.getTitle())
                 .status(t.getStatus())
                 .priority(t.getPriority())
@@ -515,7 +515,7 @@ public class SupportTicketServiceImpl implements SupportTicketService {
         }
 
         return SupportTicketDetailResponse.builder()
-                .ticketId(t.getId())
+                .id(t.getId())
                 .title(t.getTitle())
                 .description(t.getDescription())
                 .status(t.getStatus())

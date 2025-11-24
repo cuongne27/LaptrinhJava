@@ -70,4 +70,6 @@ public interface QuotationRepository extends JpaRepository<Quotation, Long> {
             "LEFT JOIN FETCH q.quotationPromotions " +
             "WHERE q.id = :id")
     Optional<Quotation> findByIdWithDetails(@Param("id") Long id);
+
+//    void deleteByQuotationBySalesOrderId(Long orderId);
 }

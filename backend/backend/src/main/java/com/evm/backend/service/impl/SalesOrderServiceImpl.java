@@ -35,6 +35,7 @@ public class SalesOrderServiceImpl implements SalesOrderService {
     private final PromotionRepository promotionRepository;
     private final OrderPromotionsRepository orderPromotionsRepository;
     private final PaymentRepository paymentRepository;
+    private final QuotationRepository quotationRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -268,14 +269,21 @@ public class SalesOrderServiceImpl implements SalesOrderService {
     @Override
     @Transactional
     public void deleteOrder(Long orderId) {
-        log.info("Deleting order: {}", orderId);
+        SalesOrder order = salesOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
-        if (!salesOrderRepository.existsById(orderId)) {
-            throw new ResourceNotFoundException("Order not found");
+        // ✅ DELETE quotation first nếu có
+        if (order.getQuotations() != null) {
+            quotationRepository.delete((Quotation) order.getQuotations());
         }
 
-        salesOrderRepository.deleteById(orderId);
-        log.info("Order deleted: {}", orderId);
+//        // Hoặc xóa theo relationship
+//        quotationRepository.deleteByQuotationBySalesOrderId(orderId);
+
+        // Sau đó mới xóa order
+        salesOrderRepository.delete(order);
+
+        log.info("Deleted order: {}", orderId);
     }
 
     @Override

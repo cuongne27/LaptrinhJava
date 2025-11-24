@@ -50,7 +50,7 @@ public class InventoryCrudController {
             @Parameter(description = "Từ khóa tìm kiếm (tên sản phẩm, địa điểm)") @RequestParam(required = false) String searchKeyword,
             @Parameter(description = "Product ID") @RequestParam(required = false) Long productId,
             @Parameter(description = "Dealer ID") @RequestParam(required = false) Long dealerId,
-            @Parameter(description = "Brand ID") @RequestParam(required = false) int brandId,
+            @Parameter(description = "Brand ID") @RequestParam(required = false) Integer  brandId,
             @Parameter(description = "Lọc kho của hãng") @RequestParam(required = false) Boolean isBrandWarehouse,
             @Parameter(description = "SL tồn tối thiểu") @RequestParam(required = false) Integer minAvailable,
             @Parameter(description = "SL tồn tối đa") @RequestParam(required = false) Integer maxAvailable,

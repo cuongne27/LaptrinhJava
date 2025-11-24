@@ -15,9 +15,10 @@ import type { PaginatedResponse } from "@/types";
 import { Search, Plus, Eye, Edit, Trash2, RefreshCw, Check, X, UserPlus } from "lucide-react";
 
 interface SupportTicket {
-  id: number;
+  id?: number;
+  ticketId?: number; // Backend might return this instead
   ticketNumber: string;
-  subject: string;
+  title: string;
   description: string;
   status: string;
   priority: string;
@@ -33,7 +34,7 @@ interface SupportTicket {
 
 const ticketSchema = z.object({
   customerId: z.number().min(1, "Vui lòng chọn khách hàng"),
-  subject: z.string().min(1, "Tiêu đề không được để trống"),
+  title: z.string().min(1, "Tiêu đề không được để trống"),
   description: z.string().min(1, "Mô tả không được để trống"),
   priority: z.string().min(1, "Vui lòng chọn độ ưu tiên"),
   category: z.string().min(1, "Vui lòng chọn danh mục"),
@@ -43,6 +44,28 @@ const ticketSchema = z.object({
 
 type TicketForm = z.infer<typeof ticketSchema>;
 
+// Helper functions for display labels
+const getPriorityLabel = (priority: string) => {
+  const labels: Record<string, string> = {
+    LOW: "Thấp",
+    MEDIUM: "Trung bình",
+    HIGH: "Cao",
+    URGENT: "Khẩn cấp",
+  };
+  return labels[priority] || priority;
+};
+
+const getCategoryLabel = (category: string) => {
+  const labels: Record<string, string> = {
+    TECHNICAL: "Kỹ thuật",
+    BILLING: "Thanh toán",
+    SALES: "Bán hàng",
+    WARRANTY: "Bảo hành",
+    OTHER: "Khác",
+  };
+  return labels[category] || category;
+};
+
 export default function SupportTicketsPage() {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,17 +73,24 @@ export default function SupportTicketsPage() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
-  const [viewMode, setViewMode] = useState<"list" | "create" | "edit" | "detail">("list");
+  const [viewMode, setViewMode] = useState<"list" | "create" | "edit" | "detail" | "assign">("list");
+  const [assignUserId, setAssignUserId] = useState<string>("");
 
   const {
     register,
     handleSubmit,
     reset,
-    trigger,
-    getValues,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<TicketForm>({
     resolver: zodResolver(ticketSchema),
+    defaultValues: {
+      customerId: 0,
+      subject: "",
+      description: "",
+      priority: "",
+      category: "",
+    }
   });
 
   useEffect(() => {
@@ -80,6 +110,13 @@ export default function SupportTicketsPage() {
       const response = await apiClient.get<PaginatedResponse<SupportTicket>>(
         `/support-tickets?${params.toString()}`
       );
+      
+      // Log để check kiểu dữ liệu
+      if (response.data.content.length > 0) {
+        console.log("First ticket:", response.data.content[0]);
+        console.log("First ticket ID type:", typeof response.data.content[0].id);
+      }
+      
       setTickets(response.data.content);
       setTotalPages(response.data.totalPages);
     } catch (error) {
@@ -93,25 +130,31 @@ export default function SupportTicketsPage() {
   const handleCreate = () => {
     reset({
       customerId: 0,
-      subject: "",
+      title: "",
       description: "",
       priority: "",
       category: "",
+      salesOrderId: undefined,
+      vehicleId: undefined,
     });
     setSelectedTicket(null);
     setViewMode("create");
   };
 
   const handleEdit = (ticket: SupportTicket) => {
+    console.log("Editing ticket:", ticket);
+    
+    // Reset the form first to clear any previous state
     reset({
       customerId: ticket.customerId,
-      subject: ticket.subject,
+      title: ticket.title,
       description: ticket.description,
-      priority: ticket.priority,
-      category: ticket.category,
+      priority: ticket.priority, // This should already be the enum value like "MEDIUM"
+      category: ticket.category, // This should already be the enum value like "TECHNICAL"
       salesOrderId: ticket.salesOrderId,
       vehicleId: ticket.vehicleId,
     });
+    
     setSelectedTicket(ticket);
     setViewMode("edit");
   };
@@ -136,15 +179,29 @@ export default function SupportTicketsPage() {
   };
 
   const handleAssign = async (ticket: SupportTicket) => {
-    const userId = prompt("Nhập User ID để assign:");
-    if (!userId) return;
+    setSelectedTicket(ticket);
+    setAssignUserId("");
+    setViewMode("assign");
+  };
+
+  const handleAssignSubmit = async () => {
+    if (!selectedTicket || !assignUserId) {
+      toast.error("Vui lòng nhập User ID");
+      return;
+    }
     try {
-      await apiClient.patch(`/support-tickets/${ticket.id}/assign?userId=${userId}`);
-      toast.success("Assign thành công!");
+      await apiClient.patch(`/support-tickets/${selectedTicket.id}/assign`, null, {
+        params: { userId: assignUserId }
+      });
+      toast.success("Phân công thành công!");
+      setViewMode("list");
+      setAssignUserId("");
+      setSelectedTicket(null);
       fetchTickets();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error assigning ticket:", error);
-      toast.error("Không thể assign ticket");
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || "Không thể phân công ticket";
+      toast.error(errorMessage);
     }
   };
 
@@ -171,12 +228,45 @@ export default function SupportTicketsPage() {
   };
 
   const onSubmit = async (data: TicketForm) => {
+    console.log("Form data being submitted:", data);
+    
+    // Ensure we're sending the correct data types
+    const payload = {
+      customerId: Number(data.customerId),
+      title: data.title.trim(),
+      description: data.description.trim(),
+      priority: String(data.priority), // Explicitly cast to string
+      category: String(data.category), // Explicitly cast to string
+      salesOrderId: data.salesOrderId ? Number(data.salesOrderId) : undefined,
+      vehicleId: data.vehicleId?.trim() || undefined,
+    };
+    
+    // Remove undefined values
+    Object.keys(payload).forEach(key => {
+      if (payload[key as keyof typeof payload] === undefined) {
+        delete payload[key as keyof typeof payload];
+      }
+    });
+    
+    console.log("Payload being sent:", payload);
+    console.log("Payload as JSON:", JSON.stringify(payload, null, 2));
+    
     try {
       if (viewMode === "create") {
-        await apiClient.post("/support-tickets", data);
+        const response = await apiClient.post("/support-tickets", payload, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        console.log("Response:", response);
         toast.success("Tạo ticket thành công!");
       } else if (viewMode === "edit" && selectedTicket) {
-        await apiClient.put(`/support-tickets/${selectedTicket.id}`, data);
+        const response = await apiClient.put(`/support-tickets/${selectedTicket.id}`, payload, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        console.log("Response:", response);
         toast.success("Cập nhật thành công!");
       }
       setViewMode("list");
@@ -184,12 +274,21 @@ export default function SupportTicketsPage() {
       fetchTickets();
     } catch (error: any) {
       console.error("Error saving ticket:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error config:", error.config);
+      console.error("Request data sent:", error.config?.data);
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||
         "Không thể lưu ticket";
       toast.error(errorMessage);
     }
+  };
+
+  const handleModalClose = () => {
+    setViewMode("list");
+    reset();
+    setSelectedTicket(null);
   };
 
   return (
@@ -237,66 +336,104 @@ export default function SupportTicketsPage() {
         </div>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {tickets.map((ticket) => (
-              <Card key={ticket.id} className="overflow-hidden">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{ticket.ticketNumber}</CardTitle>
-                    <div className="flex gap-1">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(ticket.status)}`}>
+              <Card key={ticket.id} className="flex flex-col hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-base font-semibold truncate">
+                        {ticket.ticketNumber}
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                        {ticket.title}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap ${getStatusColor(ticket.status)}`}>
                         {ticket.status}
                       </span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(ticket.priority)}`}>
-                        {ticket.priority}
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap ${getPriorityColor(ticket.priority)}`}>
+                        {getPriorityLabel(ticket.priority)}
                       </span>
                     </div>
                   </div>
-                  <CardDescription>{ticket.subject}</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Khách hàng</span>
-                      <span className="font-medium">{ticket.customerName}</span>
+                <CardContent className="flex-1 flex flex-col justify-between pt-0">
+                  <div className="space-y-2 mb-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground min-w-[80px]">Khách hàng</span>
+                      <span className="font-medium truncate">{ticket.customerName}</span>
                     </div>
                     {ticket.assignedUserName && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Người phụ trách</span>
-                        <span className="font-medium">{ticket.assignedUserName}</span>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-muted-foreground min-w-[80px]">Người phụ trách</span>
+                        <span className="font-medium truncate">{ticket.assignedUserName}</span>
                       </div>
                     )}
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Danh mục</span>
-                      <span className="font-medium">{ticket.category}</span>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground min-w-[80px]">Danh mục</span>
+                      <span className="font-medium truncate">{getCategoryLabel(ticket.category)}</span>
                     </div>
                   </div>
-                  <div className="flex gap-2 flex-wrap">
-                    <Button variant="outline" size="sm" onClick={() => handleView(ticket)}>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleView(ticket)}
+                      className="h-8 w-8 p-0"
+                      title="Xem chi tiết"
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
                     {!ticket.assignedUserId && (
-                      <Button variant="outline" size="sm" onClick={() => handleAssign(ticket)}>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleAssign(ticket)}
+                        className="h-8 w-8 p-0"
+                        title="Phân công"
+                      >
                         <UserPlus className="h-4 w-4" />
                       </Button>
                     )}
                     {ticket.status === "OPEN" && (
-                      <Button variant="outline" size="sm" onClick={() => handleClose(ticket)}>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleClose(ticket)}
+                        className="h-8 w-8 p-0"
+                        title="Đóng ticket"
+                      >
                         <Check className="h-4 w-4" />
                       </Button>
                     )}
                     {ticket.status === "CLOSED" && (
-                      <Button variant="outline" size="sm" onClick={() => handleReopen(ticket)}>
-                        <X className="h-4 w-4" />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleReopen(ticket)}
+                        className="h-8 w-8 p-0"
+                        title="Mở lại ticket"
+                      >
+                        <RefreshCw className="h-4 w-4" />
                       </Button>
                     )}
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(ticket)}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleEdit(ticket)}
+                      className="h-8 w-8 p-0"
+                      title="Chỉnh sửa"
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="destructive"
                       size="sm"
                       onClick={() => handleDelete(ticket)}
+                      className="h-8 w-8 p-0"
+                      title="Xóa"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -334,31 +471,15 @@ export default function SupportTicketsPage() {
       <EntityModal
         title={viewMode === "create" ? "Thêm ticket mới" : "Sửa ticket"}
         open={viewMode === "create" || viewMode === "edit"}
-        onClose={() => {
-          setViewMode("list");
-          reset();
-        }}
+        onClose={handleModalClose}
         footer={
           <>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setViewMode("list");
-                reset();
-              }}
-            >
+            <Button variant="outline" onClick={handleModalClose}>
               Hủy
             </Button>
             <Button
-              type="button"
-              onClick={async () => {
-                const isValid = await trigger();
-                if (isValid) {
-                  onSubmit(getValues());
-                } else {
-                  toast.error("Vui lòng điền đầy đủ thông tin bắt buộc");
-                }
-              }}
+              type="submit"
+              onClick={handleSubmit(onSubmit)}
               disabled={isSubmitting}
             >
               {isSubmitting ? "Đang lưu..." : viewMode === "create" ? "Tạo" : "Cập nhật"}
@@ -366,7 +487,7 @@ export default function SupportTicketsPage() {
           </>
         }
       >
-        <form className="space-y-4">
+        <div className="space-y-4">
           <div>
             <label className="text-sm font-medium">Khách hàng ID *</label>
             <Input
@@ -380,9 +501,9 @@ export default function SupportTicketsPage() {
           </div>
           <div>
             <label className="text-sm font-medium">Tiêu đề *</label>
-            <Input {...register("subject")} className="mt-1" />
-            {errors.subject && (
-              <p className="text-sm text-destructive mt-1">{errors.subject.message}</p>
+            <Input {...register("title")} className="mt-1" />
+            {errors.title && (
+              <p className="text-sm text-destructive mt-1">{errors.title.message}</p>
             )}
           </div>
           <div>
@@ -421,13 +542,94 @@ export default function SupportTicketsPage() {
               <option value="TECHNICAL">Kỹ thuật</option>
               <option value="BILLING">Thanh toán</option>
               <option value="SALES">Bán hàng</option>
+              <option value="WARRANTY">Bảo hành</option>
               <option value="OTHER">Khác</option>
             </select>
             {errors.category && (
               <p className="text-sm text-destructive mt-1">{errors.category.message}</p>
             )}
           </div>
-        </form>
+          <div>
+            <label className="text-sm font-medium">Sales Order ID (tùy chọn)</label>
+            <Input
+              type="number"
+              {...register("salesOrderId", { 
+                valueAsNumber: true,
+                setValueAs: (v) => v === "" ? undefined : Number(v)
+              })}
+              className="mt-1"
+              placeholder="Nhập ID đơn hàng nếu có"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Vehicle ID (tùy chọn)</label>
+            <Input
+              {...register("vehicleId")}
+              className="mt-1"
+              placeholder="Nhập ID xe nếu có"
+            />
+          </div>
+        </div>
+      </EntityModal>
+
+      {/* Assign Modal */}
+      <EntityModal
+        title="Phân công ticket"
+        open={viewMode === "assign"}
+        onClose={() => {
+          setViewMode("list");
+          setAssignUserId("");
+          setSelectedTicket(null);
+        }}
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setViewMode("list");
+                setAssignUserId("");
+                setSelectedTicket(null);
+              }}
+            >
+              Hủy
+            </Button>
+            <Button onClick={handleAssignSubmit}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Phân công
+            </Button>
+          </>
+        }
+      >
+        {selectedTicket && (
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Ticket</label>
+              <p className="text-lg font-semibold">{selectedTicket.ticketNumber}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Tiêu đề</label>
+              <p>{selectedTicket.title}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Khách hàng</label>
+              <p>{selectedTicket.customerName}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Nhập User ID để phân công *</label>
+              <Input
+                type="number"
+                value={assignUserId}
+                onChange={(e) => setAssignUserId(e.target.value)}
+                placeholder="Ví dụ: 1, 2, 3..."
+                className="mt-1"
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Nhập ID của người dùng sẽ được phân công xử lý ticket này
+              </p>
+            </div>
+          </div>
+        )}
       </EntityModal>
 
       {/* Detail Modal */}
@@ -441,14 +643,16 @@ export default function SupportTicketsPage() {
         footer={
           <>
             {selectedTicket && !selectedTicket.assignedUserId && (
-              <Button onClick={() => handleAssign(selectedTicket)}>
+              <Button onClick={() => {
+                setViewMode("assign");
+              }}>
                 <UserPlus className="mr-2 h-4 w-4" />
-                Assign
+                Phân công
               </Button>
             )}
             <Button onClick={() => selectedTicket && handleEdit(selectedTicket)}>
               <Edit className="mr-2 h-4 w-4" />
-              Sửa
+              Chỉnh sửa
             </Button>
           </>
         }
@@ -461,7 +665,7 @@ export default function SupportTicketsPage() {
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Tiêu đề</label>
-              <p>{selectedTicket.subject}</p>
+              <p>{selectedTicket.title}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Mô tả</label>
@@ -479,9 +683,13 @@ export default function SupportTicketsPage() {
               <label className="text-sm font-medium text-muted-foreground">Độ ưu tiên</label>
               <p>
                 <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(selectedTicket.priority)}`}>
-                  {selectedTicket.priority}
+                  {getPriorityLabel(selectedTicket.priority)}
                 </span>
               </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Danh mục</label>
+              <p>{getCategoryLabel(selectedTicket.category)}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Khách hàng</label>

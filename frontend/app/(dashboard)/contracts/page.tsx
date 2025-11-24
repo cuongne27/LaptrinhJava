@@ -25,6 +25,7 @@ interface Contract {
   endDate: string;
   status: string;
   commissionRate: number;
+  salesTarget?: number;
   createdAt: string;
 }
 
@@ -34,6 +35,7 @@ const contractSchema = z.object({
   startDate: z.string().min(1, "Vui lòng chọn ngày bắt đầu"),
   endDate: z.string().min(1, "Vui lòng chọn ngày kết thúc"),
   commissionRate: z.number().min(0, "Tỷ lệ hoa hồng phải >= 0").max(100, "Tỷ lệ hoa hồng phải <= 100"),
+  salesTarget: z.number().min(0, "Mục tiêu doanh số phải >= 0"), // ✅ Required field
 });
 
 type ContractForm = z.infer<typeof contractSchema>;
@@ -55,6 +57,14 @@ export default function ContractsPage() {
     formState: { errors, isSubmitting },
   } = useForm<ContractForm>({
     resolver: zodResolver(contractSchema),
+    defaultValues: {
+      brandId: 0,
+      dealerId: 0,
+      startDate: "",
+      endDate: "",
+      commissionRate: 0,
+      salesTarget: 0,
+    }
   });
 
   useEffect(() => {
@@ -88,6 +98,7 @@ export default function ContractsPage() {
       startDate: "",
       endDate: "",
       commissionRate: 0,
+      salesTarget: 0,
     });
     setSelectedContract(null);
     setViewMode("create");
@@ -100,6 +111,7 @@ export default function ContractsPage() {
       startDate: contract.startDate,
       endDate: contract.endDate,
       commissionRate: contract.commissionRate,
+      salesTarget: contract.salesTarget || 0,
     });
     setSelectedContract(contract);
     setViewMode("edit");
@@ -125,12 +137,26 @@ export default function ContractsPage() {
   };
 
   const onSubmit = async (data: ContractForm) => {
+    console.log("Form data:", data);
+    
     try {
+      // ✅ Ensure all required fields are present
+      const payload = {
+        brandId: data.brandId,
+        dealerId: data.dealerId,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        commissionRate: data.commissionRate,
+        salesTarget: data.salesTarget, // ✅ Required by backend
+      };
+
+      console.log("Payload being sent:", JSON.stringify(payload, null, 2));
+
       if (viewMode === "create") {
-        await apiClient.post("/contracts/create", data);
+        await apiClient.post("/contracts/create", payload);
         toast.success("Tạo hợp đồng thành công!");
       } else if (viewMode === "edit" && selectedContract) {
-        await apiClient.put(`/contracts/update/${selectedContract.id}`, data);
+        await apiClient.put(`/contracts/update/${selectedContract.id}`, payload);
         toast.success("Cập nhật thành công!");
       }
       setViewMode("list");
@@ -138,6 +164,7 @@ export default function ContractsPage() {
       fetchContracts();
     } catch (error: any) {
       console.error("Error saving contract:", error);
+      console.error("Error response:", error.response?.data);
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||
@@ -199,6 +226,12 @@ export default function ContractsPage() {
                       <span className="text-sm text-muted-foreground">Hoa hồng</span>
                       <span className="font-medium">{contract.commissionRate}%</span>
                     </div>
+                    {contract.salesTarget && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Mục tiêu</span>
+                        <span className="font-medium">{contract.salesTarget.toLocaleString()}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2 flex-wrap">
                     <Button variant="outline" size="sm" onClick={() => handleView(contract)}>
@@ -280,56 +313,94 @@ export default function ContractsPage() {
           </>
         }
       >
-        <form className="space-y-4">
+        <div className="space-y-4">
           <div>
             <label className="text-sm font-medium">Thương hiệu ID *</label>
             <Input
               type="number"
               {...register("brandId", { valueAsNumber: true })}
               className="mt-1"
+              placeholder="Nhập ID thương hiệu"
             />
             {errors.brandId && (
               <p className="text-sm text-destructive mt-1">{errors.brandId.message}</p>
             )}
           </div>
+          
           <div>
             <label className="text-sm font-medium">Đại lý ID *</label>
             <Input
               type="number"
               {...register("dealerId", { valueAsNumber: true })}
               className="mt-1"
+              placeholder="Nhập ID đại lý"
             />
             {errors.dealerId && (
               <p className="text-sm text-destructive mt-1">{errors.dealerId.message}</p>
             )}
           </div>
-          <div>
-            <label className="text-sm font-medium">Ngày bắt đầu *</label>
-            <Input type="date" {...register("startDate")} className="mt-1" />
-            {errors.startDate && (
-              <p className="text-sm text-destructive mt-1">{errors.startDate.message}</p>
-            )}
+
+          <div className="border-t pt-4">
+            <h3 className="font-semibold mb-3">Thời gian hợp đồng</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Ngày bắt đầu *</label>
+                <Input type="date" {...register("startDate")} className="mt-1" />
+                {errors.startDate && (
+                  <p className="text-sm text-destructive mt-1">{errors.startDate.message}</p>
+                )}
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Ngày kết thúc *</label>
+                <Input type="date" {...register("endDate")} className="mt-1" />
+                {errors.endDate && (
+                  <p className="text-sm text-destructive mt-1">{errors.endDate.message}</p>
+                )}
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium">Ngày kết thúc *</label>
-            <Input type="date" {...register("endDate")} className="mt-1" />
-            {errors.endDate && (
-              <p className="text-sm text-destructive mt-1">{errors.endDate.message}</p>
-            )}
+
+          <div className="border-t pt-4">
+            <h3 className="font-semibold mb-3">Điều khoản hợp đồng</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Tỷ lệ hoa hồng (%) *</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  {...register("commissionRate", { valueAsNumber: true })}
+                  className="mt-1"
+                  placeholder="Ví dụ: 5.5"
+                />
+                {errors.commissionRate && (
+                  <p className="text-sm text-destructive mt-1">{errors.commissionRate.message}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tỷ lệ phần trăm hoa hồng cho đại lý
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Mục tiêu doanh số *</label>
+                <Input
+                  type="number"
+                  {...register("salesTarget", { valueAsNumber: true })}
+                  className="mt-1"
+                  placeholder="Ví dụ: 1000000000"
+                />
+                {errors.salesTarget && (
+                  <p className="text-sm text-destructive mt-1">{errors.salesTarget.message}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Mục tiêu doanh số mà đại lý cần đạt được (VNĐ)
+                </p>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium">Tỷ lệ hoa hồng (%) *</label>
-            <Input
-              type="number"
-              step="0.01"
-              {...register("commissionRate", { valueAsNumber: true })}
-              className="mt-1"
-            />
-            {errors.commissionRate && (
-              <p className="text-sm text-destructive mt-1">{errors.commissionRate.message}</p>
-            )}
-          </div>
-        </form>
+        </div>
       </EntityModal>
 
       {/* Detail Modal */}
@@ -377,6 +448,12 @@ export default function ContractsPage() {
               <label className="text-sm font-medium text-muted-foreground">Tỷ lệ hoa hồng</label>
               <p>{selectedContract.commissionRate}%</p>
             </div>
+            {selectedContract.salesTarget && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Mục tiêu doanh số</label>
+                <p>{selectedContract.salesTarget.toLocaleString()} VNĐ</p>
+              </div>
+            )}
           </div>
         )}
       </EntityModal>

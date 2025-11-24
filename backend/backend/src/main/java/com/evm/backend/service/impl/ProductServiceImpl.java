@@ -37,6 +37,39 @@ public class ProductServiceImpl implements ProductService {
     private final ObjectMapper objectMapper;
     private final BrandRepository brandRepository;
 
+    /**
+     * Get all products with pagination (for CRUD management)
+     */
+    @Override
+    public Page<ProductListResponse> getAllProducts(Pageable pageable) {
+        log.debug("Getting all products with pagination: {}", pageable);
+
+        Page<Product> productsPage = productRepository.findAll(pageable);
+
+        // Convert to ProductListResponse without dealer context
+        return productsPage.map(product -> convertToListResponseWithoutDealer(product));
+    }
+
+    /**
+     * Get all products with pagination and search (for CRUD management)
+     */
+    @Override
+    public Page<ProductListResponse> getAllProducts(String searchKeyword, Pageable pageable) {
+        log.debug("Getting all products with pagination and search: {}", pageable);
+
+        Page<Product> productsPage;
+        if (searchKeyword != null && !searchKeyword.trim().isEmpty()) {
+            // Search by product name with Brand fetched
+            productsPage = productRepository.findByProductNameContainingIgnoreCaseWithBrand(
+                    searchKeyword.trim(), pageable);
+        } else {
+            productsPage = productRepository.findAll(pageable);
+        }
+
+        // Convert to ProductListResponse without dealer context
+        return productsPage.map(product -> convertToListResponseWithoutDealer(product));
+    }
+
     @Override
     public Page<ProductListResponse> getProductCatalog(
             String username,
@@ -84,6 +117,22 @@ public class ProductServiceImpl implements ProductService {
         return convertToDetailResponse(product);
     }
 
+    /**
+     * Get product detail by ID (for CRUD management, no dealer context)
+     */
+    @Override
+    public ProductDetailResponse getProductById(Long productId) {
+        log.debug("Getting product by id: {}", productId);
+
+        Product product = productRepository.findByIdWithDetails(productId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Product not found with id: " + productId));
+
+        log.debug("Product found: {}", product.getProductName());
+
+        return convertToDetailResponse(product);
+    }
+
     //TẠO PRODUCT
     @Override
     @Transactional
@@ -96,16 +145,32 @@ public class ProductServiceImpl implements ProductService {
                         "Brand not found with id: " + productRequest.getBrandId()));
 
         // Tạo TechnicalSpecs (Embeddable nên không cần set product)
-        TechnicalSpecs technicalSpecs = TechnicalSpecs.builder()
-                .batteryCapacity(productRequest.getTechnicalSpecs().getBatteryCapacity())
-                .productRange(productRequest.getTechnicalSpecs().getProductRange())
-                .power(productRequest.getTechnicalSpecs().getPower())
-                .maxSpeed(productRequest.getTechnicalSpecs().getMaxSpeed())
-                .chargingTime(productRequest.getTechnicalSpecs().getChargingTime())
-                .dimensions(productRequest.getTechnicalSpecs().getDimensions())
-                .weight(productRequest.getTechnicalSpecs().getWeight())
-                .seatingCapacity(productRequest.getTechnicalSpecs().getSeatingCapacity())
-                .build();
+        // Nếu technicalSpecs null, tạo TechnicalSpecs rỗng
+        TechnicalSpecs technicalSpecs = null;
+        if (productRequest.getTechnicalSpecs() != null) {
+            technicalSpecs = TechnicalSpecs.builder()
+                    .batteryCapacity(productRequest.getTechnicalSpecs().getBatteryCapacity())
+                    .productRange(productRequest.getTechnicalSpecs().getProductRange())
+                    .power(productRequest.getTechnicalSpecs().getPower())
+                    .maxSpeed(productRequest.getTechnicalSpecs().getMaxSpeed())
+                    .chargingTime(productRequest.getTechnicalSpecs().getChargingTime())
+                    .dimensions(productRequest.getTechnicalSpecs().getDimensions())
+                    .weight(productRequest.getTechnicalSpecs().getWeight())
+                    .seatingCapacity(productRequest.getTechnicalSpecs().getSeatingCapacity())
+                    .build();
+        } else {
+            // Tạo TechnicalSpecs rỗng nếu không có
+            technicalSpecs = TechnicalSpecs.builder()
+                    .batteryCapacity(null)
+                    .productRange(null)
+                    .power(null)
+                    .maxSpeed(null)
+                    .chargingTime(null)
+                    .dimensions(null)
+                    .weight(null)
+                    .seatingCapacity(null)
+                    .build();
+        }
 
         // Tạo Product với TechnicalSpecs nhúng
         Product product = Product.builder()
@@ -198,6 +263,19 @@ public class ProductServiceImpl implements ProductService {
                     .seatingCapacity(productRequest.getTechnicalSpecs().getSeatingCapacity())
                     .build();
             product.setTechnicalSpecs(technicalSpecs);
+        } else {
+            // Nếu technicalSpecs null, tạo TechnicalSpecs rỗng
+            TechnicalSpecs emptySpecs = TechnicalSpecs.builder()
+                    .batteryCapacity(null)
+                    .productRange(null)
+                    .power(null)
+                    .maxSpeed(null)
+                    .chargingTime(null)
+                    .dimensions(null)
+                    .weight(null)
+                    .seatingCapacity(null)
+                    .build();
+            product.setTechnicalSpecs(emptySpecs);
         }
 
         // Update Features: Clear và rebuild
@@ -292,7 +370,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
-     * Convert Product entity to ProductListResponse
+     * Convert Product entity to ProductListResponse (with dealer context)
      */
     private ProductListResponse convertToListResponse(Product product, Long dealerId) {
         // Lấy màu sắc có sẵn tại dealer
@@ -302,6 +380,42 @@ public class ProductServiceImpl implements ProductService {
         // Đếm số lượng xe có sẵn
         Long availableQuantity = productRepository
                 .countAvailableVehiclesByProductAndDealer(product.getId(), dealerId);
+
+        return ProductListResponse.builder()
+                .id(product.getId())
+                .productName(product.getProductName())
+                .version(product.getVersion())
+                .msrp(product.getMsrp())
+                .imageUrl(product.getImageUrl())
+                .brandName(product.getBrand() != null ? product.getBrand().getBrandName() : null)
+                .brandId(product.getBrand() != null ? Long.valueOf(product.getBrand().getId()) : null)
+                .availableColors(availableColors)
+                .availableQuantity(availableQuantity)
+                .isActive(product.getIsActive())
+                .build();
+    }
+
+    /**
+     * Convert Product entity to ProductListResponse (without dealer context)
+     */
+    private ProductListResponse convertToListResponseWithoutDealer(Product product) {
+        // Lấy màu sắc từ variants
+        List<String> availableColors = new ArrayList<>();
+        if (product.getVariants() != null) {
+            availableColors = product.getVariants().stream()
+                    .map(variant -> variant.getColor())
+                    .filter(color -> color != null)
+                    .distinct()
+                    .collect(Collectors.toList());
+        }
+
+        // Tính tổng số lượng từ variants
+        Long availableQuantity = 0L;
+        if (product.getVariants() != null) {
+            availableQuantity = product.getVariants().stream()
+                    .mapToLong(variant -> variant.getAvailableQuantity() != null ? variant.getAvailableQuantity() : 0L)
+                    .sum();
+        }
 
         return ProductListResponse.builder()
                 .id(product.getId())

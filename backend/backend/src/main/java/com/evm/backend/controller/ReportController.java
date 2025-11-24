@@ -19,7 +19,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/reports") // <<< MODULE: QUẢN LÝ BÁO CÁO VÀ THỐNG KÊ (REPORT MANAGEMENT)
+@RequestMapping("/api/reports")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Report Management", description = "APIs quản lý báo cáo và thống kê")
@@ -31,9 +31,6 @@ public class ReportController {
     // D.1: SALES REPORTS
     // =====================================================
 
-    // <<< CHỨC NĂNG: BÁO CÁO DOANH SỐ BÁN HÀNG
-    // <<< ĐẦU API: GET /api/reports/sales
-    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/sales")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Báo cáo doanh số bán hàng",
@@ -47,7 +44,7 @@ public class ReportController {
 
             @RequestParam(required = false) Long dealerId,
             @RequestParam(required = false) Long salesPersonId,
-            @RequestParam(required = false) String groupBy // DAY, WEEK, MONTH, QUARTER, YEAR
+            @RequestParam(required = false) String groupBy
     ) {
         log.info("REST request to get sales report");
 
@@ -63,9 +60,6 @@ public class ReportController {
         return ResponseEntity.ok(response);
     }
 
-    // <<< CHỨC NĂNG: XUẤT BÁO CÁO DOANH SỐ RA EXCEL
-    // <<< ĐẦU API: GET /api/reports/sales/export
-    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/sales/export")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Xuất báo cáo doanh số ra Excel")
@@ -76,40 +70,33 @@ public class ReportController {
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
 
-            @RequestParam(required = false) Long dealerId,
-            @RequestParam(defaultValue = "EXCEL") String format // EXCEL, PDF, CSV
+            @RequestParam(required = false) Long dealerId
     ) {
-        log.info("REST request to export sales report");
+        log.info("REST request to export sales report to Excel");
 
         ReportFilterRequest filter = ReportFilterRequest.builder()
                 .startDate(startDate)
                 .endDate(endDate)
                 .dealerId(dealerId)
-                .exportFormat(format)
                 .build();
 
-        byte[] fileContent = reportService.exportSalesReportToExcel(filter);
+        byte[] excelContent = reportService.exportSalesReportToExcel(filter);
 
         HttpHeaders headers = new HttpHeaders();
-        if ("EXCEL".equals(format)) {
-            headers.setContentType(MediaType.parseMediaType(
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
-            headers.setContentDispositionFormData("attachment",
-                    "sales-report-" + LocalDate.now() + ".xlsx");
-        }
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDispositionFormData("attachment",
+                "sales-report-" + LocalDate.now() + ".xlsx");
 
         return ResponseEntity.ok()
                 .headers(headers)
-                .body(fileContent);
+                .body(excelContent);
     }
 
     // =====================================================
     // D.2: INVENTORY REPORTS
     // =====================================================
 
-    // <<< CHỨC NĂNG: BÁO CÁO TỒN KHO
-    // <<< ĐẦU API: GET /api/reports/inventory
-    // <<< VAI TRÒ: BRAND_MANAGER, DEALER_STAFF, ADMIN
     @GetMapping("/inventory")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'DEALER_STAFF', 'ADMIN')")
     @Operation(summary = "Báo cáo tồn kho",
@@ -117,7 +104,7 @@ public class ReportController {
     public ResponseEntity<InventoryReportResponse> getInventoryReport(
             @RequestParam(required = false) Long productId,
             @RequestParam(required = false) Long dealerId,
-            @RequestParam(required = false) String status // LOW_STOCK, OUT_OF_STOCK
+            @RequestParam(required = false) String status
     ) {
         log.info("REST request to get inventory report");
 
@@ -131,9 +118,6 @@ public class ReportController {
         return ResponseEntity.ok(response);
     }
 
-    // <<< CHỨC NĂNG: XUẤT BÁO CÁO TỒN KHO RA EXCEL
-    // <<< ĐẦU API: GET /api/reports/inventory/export
-    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/inventory/export")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Xuất báo cáo tồn kho ra Excel")
@@ -141,14 +125,14 @@ public class ReportController {
             @RequestParam(required = false) Long productId,
             @RequestParam(required = false) Long dealerId
     ) {
-        log.info("REST request to export inventory report");
+        log.info("REST request to export inventory report to Excel");
 
         ReportFilterRequest filter = ReportFilterRequest.builder()
                 .productId(productId)
                 .dealerId(dealerId)
                 .build();
 
-        byte[] fileContent = reportService.exportInventoryReportToExcel(filter);
+        byte[] excelContent = reportService.exportInventoryReportToExcel(filter);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(
@@ -158,16 +142,13 @@ public class ReportController {
 
         return ResponseEntity.ok()
                 .headers(headers)
-                .body(fileContent);
+                .body(excelContent);
     }
 
     // =====================================================
     // C.1, C.2: DEALER PERFORMANCE
     // =====================================================
 
-    // <<< CHỨC NĂNG: BÁO CÁO HIỆU SUẤT CỦA MỘT ĐẠI LÝ
-    // <<< ĐẦU API: GET /api/reports/dealers/{dealerId}/performance
-    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/dealers/{dealerId}/performance")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Báo cáo hiệu suất đại lý",
@@ -192,9 +173,6 @@ public class ReportController {
         return ResponseEntity.ok(response);
     }
 
-    // <<< CHỨC NĂNG: BÁO CÁO HIỆU SUẤT CỦA TẤT CẢ ĐẠI LÝ
-    // <<< ĐẦU API: GET /api/reports/dealers/performance
-    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/dealers/performance")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Báo cáo hiệu suất tất cả đại lý")
@@ -217,12 +195,10 @@ public class ReportController {
         return ResponseEntity.ok(response);
     }
 
-    // <<< CHỨC NĂNG: XUẤT BÁO CÁO HIỆU SUẤT ĐẠI LÝ RA PDF
-    // <<< ĐẦU API: GET /api/reports/dealers/{dealerId}/performance/export
-    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
+    // ✅ FIXED: Đổi sang Excel thay vì PDF
     @GetMapping("/dealers/{dealerId}/performance/export")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
-    @Operation(summary = "Xuất báo cáo hiệu suất đại lý ra PDF")
+    @Operation(summary = "Xuất báo cáo hiệu suất đại lý ra Excel")
     public ResponseEntity<byte[]> exportDealerPerformance(
             @PathVariable Long dealerId,
 
@@ -232,32 +208,33 @@ public class ReportController {
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
     ) {
-        log.info("REST request to export dealer performance: {}", dealerId);
+        log.info("REST request to export dealer performance to Excel: {}", dealerId);
 
         ReportFilterRequest filter = ReportFilterRequest.builder()
                 .startDate(startDate)
                 .endDate(endDate)
                 .build();
 
-        byte[] pdfContent = reportService.exportDealerPerformanceToPdf(dealerId, filter);
+        // ✅ Method name vẫn giữ exportDealerPerformanceToPdf nhưng thực tế export Excel
+        byte[] excelContent = reportService.exportDealerPerformanceToPdf(dealerId, filter);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
+        // ✅ FIXED: Set Content-Type là Excel
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        // ✅ FIXED: File extension là .xlsx
         headers.setContentDispositionFormData("attachment",
-                "dealer-performance-" + dealerId + "-" + LocalDate.now() + ".pdf");
+                "dealer-performance-" + dealerId + "-" + LocalDate.now() + ".xlsx");
 
         return ResponseEntity.ok()
                 .headers(headers)
-                .body(pdfContent);
+                .body(excelContent);
     }
 
     // =====================================================
     // REVENUE REPORT
     // =====================================================
 
-    // <<< CHỨC NĂNG: BÁO CÁO DOANH THU TỔNG HỢP
-    // <<< ĐẦU API: GET /api/reports/revenue
-    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/revenue")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Báo cáo doanh thu tổng hợp",
@@ -287,9 +264,6 @@ public class ReportController {
     // DASHBOARD SUMMARY
     // =====================================================
 
-    // <<< CHỨC NĂNG: DỮ LIỆU TỔNG QUAN CHO DASHBOARD
-    // <<< ĐẦU API: GET /api/reports/dashboard
-    // <<< VAI TRÒ: BRAND_MANAGER, ADMIN
     @GetMapping("/dashboard")
     @PreAuthorize("hasAnyRole('BRAND_MANAGER', 'ADMIN')")
     @Operation(summary = "Dashboard tổng quan",
