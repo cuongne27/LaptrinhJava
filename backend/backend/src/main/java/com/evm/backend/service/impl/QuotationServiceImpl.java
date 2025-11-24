@@ -744,7 +744,7 @@ public class QuotationServiceImpl implements QuotationService {
 
         PdfPTable signatureTable = new PdfPTable(2);
         signatureTable.setWidthPercentage(100);
-        signatureTable.setSpacingBefore(20);
+//        signatureTable.setSpacingBefore(20);
 
         // Customer signature
         PdfPCell customerCell = new PdfPCell();
@@ -760,8 +760,8 @@ public class QuotationServiceImpl implements QuotationService {
         salesCell.setBorder(Rectangle.NO_BORDER);
         salesCell.setHorizontalAlignment(Element.ALIGN_CENTER);
         Paragraph sales = new Paragraph();
-        sales.add(new Phrase("NHÂN VIÊN TƯ VẤN\n", fontHeader));
-        sales.add(new Phrase("(Ký và ghi rõ họ tên)\n\n\n\n", fontSmall));
+        sales.add(new Phrase("                              NHÂN VIÊN TƯ VẤN\n", fontHeader));
+        sales.add(new Phrase("                                                      (Ký và ghi rõ họ tên)\n\n\n\n", fontSmall));
         if (quotation.getSalesPerson() != null) {
             sales.add(new Phrase(quotation.getSalesPerson().getFullName(), fontNormal));
         }
@@ -780,12 +780,12 @@ public class QuotationServiceImpl implements QuotationService {
     private void addInfoCell(PdfPTable table, String label, String value, Font fontHeader, Font fontNormal) {
         PdfPCell labelCell = new PdfPCell(new Phrase(label, fontHeader));
         labelCell.setBorder(Rectangle.NO_BORDER);
-        labelCell.setPadding(5);
+        labelCell.setPadding(3);
         table.addCell(labelCell);
 
         PdfPCell valueCell = new PdfPCell(new Phrase(value, fontNormal));
         valueCell.setBorder(Rectangle.NO_BORDER);
-        valueCell.setPadding(5);
+        valueCell.setPadding(3);
         table.addCell(valueCell);
     }
 

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -149,4 +150,6 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
             "o.customer.id = :customerId AND " +
             "o.status NOT IN ('COMPLETED', 'CANCELLED')")
     Long countPendingByCustomer(@Param("customerId") Long customerId);
+
+//    Integer countByProductAndDateRange(Long productId, OffsetDateTime offsetDateTime, OffsetDateTime offsetDateTime1);
 }

@@ -165,11 +165,6 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found: " + paymentId));
 
-        // Validate if payment can be updated
-        if ("COMPLETED".equals(payment.getStatus())) {
-            throw new BadRequestException("Cannot update completed payment");
-        }
-
         // Validate order
         SalesOrder order = salesOrderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + request.getOrderId()));
