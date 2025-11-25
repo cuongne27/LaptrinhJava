@@ -14,6 +14,16 @@ import { formatDate, getStatusColor } from "@/lib/utils";
 import type { VehicleListResponse, PaginatedResponse } from "@/types";
 import { Search, Plus, Eye, Edit, Trash2, RefreshCw, Truck } from "lucide-react";
 
+interface Product {
+  id: number;
+  name: string;
+}
+
+interface Dealer {
+  id: number;
+  name: string;
+}
+
 const vehicleSchema = z.object({
   id: z.string().min(1, "Vehicle ID không được để trống"),
   vin: z.string().min(1, "VIN không được để trống"),
@@ -39,6 +49,11 @@ export default function VehiclesPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleListResponse | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "create" | "edit" | "detail">("list");
+  
+  // New states for dropdowns
+  const [products, setProducts] = useState<Product[]>([]);
+  const [dealers, setDealers] = useState<Dealer[]>([]);
+  const [loadingDropdowns, setLoadingDropdowns] = useState(false);
 
   const {
     register,
@@ -52,6 +67,69 @@ export default function VehiclesPage() {
   useEffect(() => {
     fetchVehicles();
   }, [page, search, filterByVin, filterByDealer, filterByProduct, showAvailableOnly]);
+
+  // Fetch products and dealers when opening create/edit modal
+  useEffect(() => {
+    if (viewMode === "create" || viewMode === "edit") {
+      fetchProductsAndDealers();
+    }
+  }, [viewMode]);
+
+  const fetchProductsAndDealers = async () => {
+    try {
+      setLoadingDropdowns(true);
+      
+      // Fetch products - Using correct API endpoint from backend
+      try {
+        const productsRes = await apiClient.get("/products?page=0&size=100");
+        const productsData = productsRes.data;
+        
+        // Backend returns Page<ProductListResponse> with content array
+        if (productsData.content && Array.isArray(productsData.content)) {
+          // Map to our interface format
+          const mappedProducts = productsData.content.map((p: any) => ({
+            id: p.id,
+            name: p.productName // Backend uses "productName" field
+          }));
+          setProducts(mappedProducts);
+        } else {
+          setProducts([]);
+        }
+      } catch (error: any) {
+        console.error("Error fetching products:", error);
+        // Don't show error toast, just use fallback to input
+        setProducts([]);
+      }
+      
+      // Fetch dealers - Using correct API endpoint from backend
+      try {
+        const dealersRes = await apiClient.get("/dealers/filter?page=0&size=100");
+        const dealersData = dealersRes.data;
+        
+        // Backend returns Page<DealerListResponse> with content array
+        if (dealersData.content && Array.isArray(dealersData.content)) {
+          // Map to our interface format
+          const mappedDealers = dealersData.content.map((d: any) => ({
+            id: d.id,
+            name: d.dealerName // Backend uses "dealerName" field
+          }));
+          setDealers(mappedDealers);
+        } else {
+          setDealers([]);
+        }
+      } catch (error: any) {
+        console.error("Error fetching dealers:", error);
+        // Don't show error toast, just use fallback to input
+        setDealers([]);
+      }
+      
+    } catch (error) {
+      console.error("Error fetching dropdowns:", error);
+      // Only show error if both fail
+    } finally {
+      setLoadingDropdowns(false);
+    }
+  };
 
   const fetchVehicles = async () => {
     try {
@@ -509,23 +587,55 @@ export default function VehiclesPage() {
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium">Product ID *</label>
-            <Input
-              type="number"
-              {...register("productId", { valueAsNumber: true })}
-              className="mt-1"
-            />
+            <label className="text-sm font-medium">Sản phẩm *</label>
+            {products.length > 0 ? (
+              <select
+                {...register("productId", { valueAsNumber: true })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+                disabled={loadingDropdowns}
+              >
+                <option value={0}>-- Chọn sản phẩm --</option>
+                {products.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name} (ID: {product.id})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                type="number"
+                {...register("productId", { valueAsNumber: true })}
+                className="mt-1"
+                placeholder="Nhập Product ID"
+              />
+            )}
             {errors.productId && (
               <p className="text-sm text-destructive mt-1">{errors.productId.message}</p>
             )}
           </div>
           <div>
-            <label className="text-sm font-medium">Dealer ID *</label>
-            <Input
-              type="number"
-              {...register("dealerId", { valueAsNumber: true })}
-              className="mt-1"
-            />
+            <label className="text-sm font-medium">Đại lý *</label>
+            {dealers.length > 0 ? (
+              <select
+                {...register("dealerId", { valueAsNumber: true })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+                disabled={loadingDropdowns}
+              >
+                <option value={0}>-- Chọn đại lý --</option>
+                {dealers.map((dealer) => (
+                  <option key={dealer.id} value={dealer.id}>
+                    {dealer.name} (ID: {dealer.id})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                type="number"
+                {...register("dealerId", { valueAsNumber: true })}
+                className="mt-1"
+                placeholder="Nhập Dealer ID"
+              />
+            )}
             {errors.dealerId && (
               <p className="text-sm text-destructive mt-1">{errors.dealerId.message}</p>
             )}
@@ -596,4 +706,3 @@ export default function VehiclesPage() {
     </div>
   );
 }
-

@@ -268,22 +268,21 @@ public class SalesOrderServiceImpl implements SalesOrderService {
 
     @Override
     @Transactional
-    public void deleteOrder(Long orderId) {
-        SalesOrder order = salesOrderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+    public void deleteOrder(Long id) {
+        log.info("Deleting sales order ID: {}", id);
 
-        // ✅ DELETE quotation first nếu có
-        if (order.getQuotations() != null) {
-            quotationRepository.delete((Quotation) order.getQuotations());
-        }
+        // 1. Tải Entity SalesOrder (đã bao gồm các Collection được đánh dấu cascade)
+        SalesOrder orderToDelete = salesOrderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sales order not found"));
 
-//        // Hoặc xóa theo relationship
-//        quotationRepository.deleteByQuotationBySalesOrderId(orderId);
+        // 2. Sử dụng phương thức delete chuẩn của JpaRepository
+        salesOrderRepository.delete(orderToDelete);
 
-        // Sau đó mới xóa order
-        salesOrderRepository.delete(order);
+        // Nếu bạn muốn xóa nhanh hơn mà không tải toàn bộ Entity (nhưng vẫn cần logic cascade):
+        // Phải đảm bảo phương thức deleteById của bạn được JPA xử lý đúng cách,
+        // nhưng để chắc chắn, hãy dùng delete(entity).
 
-        log.info("Deleted order: {}", orderId);
+        log.info("Deleted sales order ID: {}", id);
     }
 
     @Override
@@ -353,8 +352,8 @@ public class SalesOrderServiceImpl implements SalesOrderService {
 
         // 7. Validate vehicle product matches quotation (if exists)
         // Kiểm tra nếu order có từ quotation thì phải đúng model xe
-        if (order.getQuotations() != null && !order.getQuotations().isEmpty()) {
-            var quotation = order.getQuotations().iterator().next();
+        if (order.getQuotation() != null) {
+            var quotation = order.getQuotation();
             if (quotation.getProduct() != null && vehicle.getProduct() != null) {
                 if (!quotation.getProduct().getId().equals(vehicle.getProduct().getId())) {
                     throw new BadRequestException(

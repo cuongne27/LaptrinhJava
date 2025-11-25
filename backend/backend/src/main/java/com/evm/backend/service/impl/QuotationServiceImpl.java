@@ -273,30 +273,37 @@ public class QuotationServiceImpl implements QuotationService {
         Quotation quotation = quotationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Quotation not found with id: " + id));
 
-        // Validation 1: Chỉ cho phép xóa quotation có status = DRAFT
-        if (!"DRAFT".equals(quotation.getStatus())) {
-            throw new BadRequestException(
-                    "Cannot delete quotation. Only DRAFT quotations can be deleted. Current status: " + quotation.getStatus()
-            );
-        }
+        try {
+            // Xử lý relationship với sales order nếu có
+            if (quotation.getSalesOrder() != null) {
+                SalesOrder salesOrder = quotation.getSalesOrder();
+                salesOrder.setQuotation(null); // ✅ ĐÚNG - OneToOne relationship
+                quotation.setSalesOrder(null);
+            }
 
-        // Validation 2: Không cho xóa nếu đã được convert thành sales order
-        if (quotation.getSalesOrder() != null) {
-            throw new BadRequestException(
-                    "Cannot delete quotation that has been converted to a sales order (Order ID: " +
-                            quotation.getSalesOrder().getId() + ")"
-            );
-        }
+            // Clear các promotion relationships
+            if (quotation.getQuotationPromotions() != null) {
+                quotation.getQuotationPromotions().clear();
+            }
 
-        // Clear các promotion relationships trước
-        if (quotation.getQuotationPromotions() != null) {
-            quotation.getQuotationPromotions().clear();
+//            // Clear các line items nếu có
+//            if (quotation.getQuotationItems() != null) {
+//                quotation.getQuotationItems().clear();
+//            }
+
+            // Flush để đảm bảo các thay đổi được persist
             quotationRepository.flush();
-        }
 
-        // Xóa quotation
-        quotationRepository.delete(quotation);
-        log.info("Successfully deleted quotation: {}", quotation.getQuotationNumber());
+            // Xóa quotation
+            quotationRepository.delete(quotation);
+            quotationRepository.flush();
+
+            log.info("Successfully deleted quotation: {} (ID: {})", quotation.getQuotationNumber(), id);
+
+        } catch (Exception e) {
+            log.error("Error deleting quotation ID: {}", id, e);
+            throw new BadRequestException("Failed to delete quotation: " + e.getMessage());
+        }
     }
 
     @Override

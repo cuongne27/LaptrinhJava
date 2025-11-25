@@ -77,6 +77,7 @@ public class SecurityConfiguration {
                                 auth
                                         // Cho phép đăng nhập public
                                         .requestMatchers("/api/auth/login").permitAll()
+                                        .requestMatchers("/images/**").permitAll()
                                         .requestMatchers(
                                                 "/swagger-ui/**",
                                                 "/swagger-ui.html",

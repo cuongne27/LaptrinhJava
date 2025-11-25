@@ -15,6 +15,7 @@ import com.evm.backend.repository.CustomerRepository;
 import com.evm.backend.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -249,18 +250,52 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    @Transactional
     public void deletePayment(Long paymentId) {
         log.info("Deleting payment: {}", paymentId);
 
-        Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Payment not found: " + paymentId));
+        try {
+            Payment payment = paymentRepository.findById(paymentId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Payment not found: " + paymentId));
 
-        if ("COMPLETED".equals(payment.getStatus())) {
-            throw new BadRequestException("Cannot delete completed payment");
+            if ("COMPLETED".equals(payment.getStatus())) {
+                throw new BadRequestException("Cannot delete completed payment. Please refund it first.");
+            }
+
+            // ✅ LƯU THÔNG TIN CẦN THIẾT TRƯỚC KHI XÓA
+            Long orderId = payment.getOrder() != null ? payment.getOrder().getId() : null;
+
+            // ✅ XÓA VỚI ERROR HANDLING RÕ RÀNG
+            paymentRepository.delete(payment);
+            paymentRepository.flush(); // Force thực thi DELETE ngay lập tức
+
+            log.info("Payment deleted successfully: {}", paymentId);
+
+            // ✅ CẬP NHẬT TRẠNG THÁI ORDER
+            if (orderId != null) {
+                try {
+                    SalesOrder managedOrder = salesOrderRepository.findById(orderId)
+                            .orElse(null);
+                    if (managedOrder != null) {
+                        updateOrderStatusAfterRefund(managedOrder);
+                        log.info("Order {} status updated after payment deletion", orderId);
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to update order status after payment deletion: {}", e.getMessage());
+                    // Không throw lỗi này vì payment đã xóa thành công
+                }
+            }
+
+        } catch (DataIntegrityViolationException e) {
+            log.error("Cannot delete payment due to foreign key constraint: {}", e.getMessage());
+            throw new BadRequestException(
+                    "Cannot delete this payment because it is referenced by other records. " +
+                            "Please refund it instead of deleting."
+            );
+        } catch (Exception e) {
+            log.error("Error deleting payment {}: {}", paymentId, e.getMessage(), e);
+            throw new BadRequestException("Failed to delete payment: " + e.getMessage());
         }
-
-        paymentRepository.delete(payment);
-        log.info("Payment deleted successfully: {}", paymentId);
     }
 
     @Override

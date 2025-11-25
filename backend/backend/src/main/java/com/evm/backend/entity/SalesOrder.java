@@ -10,7 +10,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Data
+@Getter // Thay thế @Data bằng @Getter/@Setter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -57,15 +58,28 @@ public class SalesOrder {
     private User salesPerson;
 
     @OneToMany(mappedBy = "order")
+    @ToString.Exclude // <--- Thêm vào
+    @EqualsAndHashCode.Exclude // <--- Thêm vào
     private Set<Payment> payments;
 
     @OneToMany(
             mappedBy = "order",
             cascade = CascadeType.ALL,
             orphanRemoval = true)
+    @ToString.Exclude // <--- Thêm vào
+    @EqualsAndHashCode.Exclude // <--- Thêm vào
     private Set<OrderPromotions> orderPromotions;
 
-    @OneToMany(mappedBy = "salesOrder")
+    @OneToOne(mappedBy = "salesOrder")
+    private Quotation quotation;
+
+    @OneToMany(
+            mappedBy = "salesOrder",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
     @Builder.Default
-    private Set<Quotation> quotations = new HashSet<>();
+    @ToString.Exclude // <--- Thêm vào
+    @EqualsAndHashCode.Exclude // <--- Thêm vào
+    private Set<SupportTicket> supportTickets = new HashSet<>();
 }

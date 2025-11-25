@@ -127,7 +127,7 @@ public class ProductComparisonServiceImpl implements ProductComparisonService {
                     .batteryCapacity(parseBigDecimal(specs.getBatteryCapacity()))
                     .topSpeed(parseInteger(specs.getMaxSpeed()))
                     .acceleration(null) // Không có field này trong TechnicalSpecs
-                    .chargingTime(parseInteger(specs.getChargingTime()))
+                    .chargingTime(parseChargingTime(specs.getChargingTime()))
                     .motorType(null) // Không có field này
                     .weight(parseInteger(specs.getWeight()));
         }
@@ -193,9 +193,9 @@ public class ProductComparisonServiceImpl implements ProductComparisonService {
         }
 
         // Thời gian sạc
-        Integer chargingTime = parseInteger(specs.getChargingTime());
+        Integer chargingTime = parseChargingTime(specs.getChargingTime());
         if (isMinInteger(chargingTime, allProducts,
-                p -> parseInteger(p.getTechnicalSpecs() != null ?
+                p -> parseChargingTime(p.getTechnicalSpecs() != null ?
                         p.getTechnicalSpecs().getChargingTime() : null))) {
             advantages.add(String.format("Sạc nhanh nhất: %d phút", chargingTime));
         }
@@ -249,9 +249,9 @@ public class ProductComparisonServiceImpl implements ProductComparisonService {
         }
 
         // Sạc lâu nhất
-        Integer chargingTime = parseInteger(specs.getChargingTime());
+        Integer chargingTime = parseChargingTime(specs.getChargingTime());
         if (isMaxInteger(chargingTime, allProducts,
-                p -> parseInteger(p.getTechnicalSpecs() != null ?
+                p -> parseChargingTime(p.getTechnicalSpecs() != null ?
                         p.getTechnicalSpecs().getChargingTime() : null))) {
             disadvantages.add(String.format("Sạc lâu nhất: %d phút", chargingTime));
         }
@@ -321,12 +321,12 @@ public class ProductComparisonServiceImpl implements ProductComparisonService {
             case "CHARGING":
                 best = products.stream()
                         .filter(p -> p.getTechnicalSpecs() != null &&
-                                parseInteger(p.getTechnicalSpecs().getChargingTime()) != null)
+                                parseChargingTime(p.getTechnicalSpecs().getChargingTime()) != null)
                         .min(Comparator.comparing(p ->
-                                parseInteger(p.getTechnicalSpecs().getChargingTime())))
+                                parseChargingTime(p.getTechnicalSpecs().getChargingTime())))
                         .orElse(null);
                 if (best != null)
-                    value = parseInteger(best.getTechnicalSpecs().getChargingTime()) + " phút";
+                    value = parseChargingTime(best.getTechnicalSpecs().getChargingTime()) + " phút";
                 break;
 
             case "CHEAPEST":
@@ -409,6 +409,33 @@ public class ProductComparisonServiceImpl implements ProductComparisonService {
             return Integer.parseInt(cleaned);
         } catch (NumberFormatException e) {
             log.warn("Cannot parse integer from: {}", value);
+            return null;
+        }
+    }
+
+    /**
+     * Parse charging time specifically
+     * Examples: "31 (10-70% DC)" -> 31, "45 minutes" -> 45
+     */
+    private Integer parseChargingTime(String value) {
+        if (value == null || value.trim().isEmpty()) return null;
+        try {
+            // Extract first number before any non-digit character
+            StringBuilder sb = new StringBuilder();
+            for (char c : value.toCharArray()) {
+                if (Character.isDigit(c)) {
+                    sb.append(c);
+                } else if (sb.length() > 0) {
+                    // Stop when we hit a non-digit after we've started collecting digits
+                    break;
+                }
+            }
+            if (sb.length() > 0) {
+                return Integer.parseInt(sb.toString());
+            }
+            return null;
+        } catch (NumberFormatException e) {
+            log.warn("Cannot parse charging time from: {}", value);
             return null;
         }
     }

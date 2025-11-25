@@ -14,19 +14,38 @@ import { formatCurrency } from "@/lib/utils";
 import type { Product, PaginatedResponse, Brand } from "@/types";
 import { Search, Plus, Eye, Edit, Trash2, RefreshCw, X } from "lucide-react";
 import Image from "next/image";
+import { FileUpload } from "@/components/ui/file-upload";
+
+// ✅ THÊM INTERFACES CHO TECHNICAL SPECS VÀ FEATURES
+interface TechnicalSpec {
+  batteryCapacity?: string;
+  productRange?: string;
+  power?: string;
+  maxSpeed?: string;
+  chargingTime?: string;
+  dimensions?: string;
+  weight?: string;
+  seatingCapacity?: string;
+}
+
+interface Feature {
+  featureName: string;
+  description: string;
+  iconUrl?: string;
+}
+
+interface Variant {
+  color: string;
+  colorCode: string;
+  availableQuantity: number;
+}
 
 const productSchema = z.object({
   productName: z.string().min(1, "Tên sản phẩm không được để trống"),
   version: z.string().optional(),
   msrp: z.number().min(0.01, "Giá phải lớn hơn 0"),
   description: z.string().optional(),
-  imageUrl: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || val === "" || val.startsWith("http") || val.startsWith("/"),
-      "URL hình ảnh không hợp lệ"
-    ),
+  imageUrl: z.string().optional(),
   videoUrl: z
     .string()
     .optional()
@@ -49,7 +68,11 @@ export default function ProductsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "create" | "edit" | "detail">("list");
-  const [variants, setVariants] = useState<Array<{ color: string; colorCode: string; availableQuantity: number }>>([
+  
+  // ✅ THÊM STATE CHO TECHNICAL SPECS VÀ FEATURES
+  const [technicalSpecs, setTechnicalSpecs] = useState<TechnicalSpec>({});
+  const [features, setFeatures] = useState<Feature[]>([]);
+  const [variants, setVariants] = useState<Variant[]>([
     { color: "", colorCode: "#FFFFFF", availableQuantity: 0 },
   ]);
 
@@ -60,6 +83,7 @@ export default function ProductsPage() {
     watch,
     trigger,
     getValues,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ProductForm>({
     resolver: zodResolver(productSchema),
@@ -105,6 +129,7 @@ export default function ProductsPage() {
     }
   };
 
+  // ✅ CẬP NHẬT handleCreate ĐỂ RESET TẤT CẢ FIELDS
   const handleCreate = () => {
     reset({
       productName: "",
@@ -116,23 +141,64 @@ export default function ProductsPage() {
       brandId: brands[0]?.id || 0,
       isActive: true,
     });
+    setTechnicalSpecs({});
+    setFeatures([]);
     setVariants([{ color: "", colorCode: "#FFFFFF", availableQuantity: 0 }]);
     setSelectedProduct(null);
     setViewMode("create");
   };
 
+  // ✅ CẬP NHẬT handleEdit ĐỂ LOAD ĐẦY ĐỦ DỮ LIỆU
   const handleEdit = (product: Product) => {
     reset({
       productName: product.productName,
       version: product.version || "",
       msrp: Number(product.msrp),
-      description: "",
+      description: product.description || "",
       imageUrl: product.imageUrl || "",
-      videoUrl: "",
+      videoUrl: product.videoUrl || "",
       brandId: product.brandId,
       isActive: product.isActive,
     });
-    setVariants([{ color: "", colorCode: "#FFFFFF", availableQuantity: 0 }]);
+    
+    // Load technical specs
+    if (product.technicalSpecs) {
+      setTechnicalSpecs({
+        batteryCapacity: product.technicalSpecs.batteryCapacity || "",
+        productRange: product.technicalSpecs.productRange || "",
+        power: product.technicalSpecs.power || "",
+        maxSpeed: product.technicalSpecs.maxSpeed || "",
+        chargingTime: product.technicalSpecs.chargingTime || "",
+        dimensions: product.technicalSpecs.dimensions || "",
+        weight: product.technicalSpecs.weight || "",
+        seatingCapacity: product.technicalSpecs.seatingCapacity || "",
+      });
+    } else {
+      setTechnicalSpecs({});
+    }
+    
+    // Load features
+    if (product.features && product.features.length > 0) {
+      setFeatures(product.features.map(f => ({
+        featureName: f.featureName || "",
+        description: f.description || "",
+        iconUrl: f.iconUrl || ""
+      })));
+    } else {
+      setFeatures([]);
+    }
+    
+    // Load variants
+    if (product.variants && product.variants.length > 0) {
+      setVariants(product.variants.map(v => ({
+        color: v.color || "",
+        colorCode: v.colorCode || "#FFFFFF",
+        availableQuantity: v.availableQuantity || 0
+      })));
+    } else {
+      setVariants([{ color: "", colorCode: "#FFFFFF", availableQuantity: 0 }]);
+    }
+    
     setSelectedProduct(product);
     setViewMode("edit");
   };
@@ -156,32 +222,46 @@ export default function ProductsPage() {
     }
   };
 
-  const handleDeletePermanent = async (product: Product) => {
-    if (
-      !confirm(
-        `Bạn có chắc muốn XÓA VĨNH VIỄN sản phẩm "${product.productName}"?\n\nHành động này không thể hoàn tác!`
-      )
-    ) {
-      return;
-    }
-    try {
-      await apiClient.delete(`/products/${product.id}/permanent`);
-      toast.success("Xóa vĩnh viễn thành công!");
-      fetchProducts();
-    } catch (error: any) {
-      console.error("Error permanently deleting product:", error);
-      toast.error(error.response?.data?.message || "Không thể xóa vĩnh viễn sản phẩm");
+  // ✅ FUNCTIONS CHO TECHNICAL SPECS
+  const updateTechnicalSpec = (field: keyof TechnicalSpec, value: string) => {
+    setTechnicalSpecs(prev => ({ ...prev, [field]: value }));
+  };
+
+  // ✅ FUNCTIONS CHO FEATURES
+  const addFeature = () => {
+    setFeatures([...features, { featureName: "", description: "", iconUrl: "" }]);
+  };
+
+  const updateFeature = (index: number, field: keyof Feature, value: string) => {
+    const updated = [...features];
+    updated[index] = { ...updated[index], [field]: value };
+    setFeatures(updated);
+  };
+
+  const removeFeature = (index: number) => {
+    setFeatures(features.filter((_, i) => i !== index));
+  };
+
+  // ✅ FUNCTIONS CHO VARIANTS (GIỮ NGUYÊN)
+  const addVariant = () => {
+    setVariants([...variants, { color: "", colorCode: "#FFFFFF", availableQuantity: 0 }]);
+  };
+
+  const updateVariant = (index: number, field: keyof Variant, value: any) => {
+    const updated = [...variants];
+    updated[index] = { ...updated[index], [field]: value };
+    setVariants(updated);
+  };
+
+  const removeVariant = (index: number) => {
+    if (variants.length > 1) {
+      setVariants(variants.filter((_, i) => i !== index));
     }
   };
 
+  // ✅ CẬP NHẬT onSubmit ĐỂ GỬI ĐẦY ĐỦ DỮ LIỆU
   const onSubmit = async (data: ProductForm) => {
-    console.log("=== FORM SUBMIT ===");
-    console.log("Form data:", data);
-    console.log("Variants:", variants);
-    console.log("Form errors:", errors);
-    
     try {
-      // Filter out empty variants
       const validVariants = variants.filter((v) => v.color.trim() !== "");
 
       if (validVariants.length === 0) {
@@ -189,21 +269,38 @@ export default function ProductsPage() {
         return;
       }
 
-      // Normalize color codes (convert 3-digit to 6-digit hex)
       const normalizeColorCode = (code: string): string | null => {
         if (!code || code.trim() === "") return null;
-        // Remove # if present
         let hex = code.replace("#", "");
-        // Convert 3-digit to 6-digit
         if (hex.length === 3) {
           hex = hex.split("").map((c) => c + c).join("");
         }
-        // Validate it's a valid hex
         if (/^[0-9A-Fa-f]{6}$/.test(hex)) {
           return `#${hex.toUpperCase()}`;
         }
         return null;
       };
+
+      // ✅ CHUẨN BỊ TECHNICAL SPECS (CHỈ GỬI NẾU CÓ GIÁ TRỊ)
+      const hasAnyTechSpec = Object.values(technicalSpecs).some(val => val && val.trim() !== "");
+      const techSpecsToSend = hasAnyTechSpec ? {
+        batteryCapacity: technicalSpecs.batteryCapacity || null,
+        productRange: technicalSpecs.productRange || null,
+        power: technicalSpecs.power || null,
+        maxSpeed: technicalSpecs.maxSpeed || null,
+        chargingTime: technicalSpecs.chargingTime || null,
+        dimensions: technicalSpecs.dimensions || null,
+        weight: technicalSpecs.weight || null,
+        seatingCapacity: technicalSpecs.seatingCapacity || null,
+      } : null;
+
+      // ✅ CHUẨN BỊ FEATURES (CHỈ GỬI NẾU CÓ GIÁ TRỊ)
+      const validFeatures = features.filter(f => f.featureName.trim() !== "");
+      const featuresToSend = validFeatures.length > 0 ? validFeatures.map(f => ({
+        featureName: f.featureName.trim(),
+        description: f.description?.trim() || null,
+        iconUrl: f.iconUrl?.trim() || null,
+      })) : null;
 
       const submitData = {
         productName: data.productName,
@@ -214,8 +311,8 @@ export default function ProductsPage() {
         videoUrl: data.videoUrl || null,
         brandId: data.brandId,
         isActive: data.isActive !== undefined ? data.isActive : true,
-        technicalSpecs: null, // TechnicalSpecs is optional, can be null
-        features: null, // Features is optional, can be null
+        technicalSpecs: techSpecsToSend,
+        features: featuresToSend,
         variants: validVariants.map((v) => ({
           color: v.color.trim(),
           colorCode: normalizeColorCode(v.colorCode),
@@ -232,6 +329,8 @@ export default function ProductsPage() {
       }
       setViewMode("list");
       reset();
+      setTechnicalSpecs({});
+      setFeatures([]);
       setVariants([{ color: "", colorCode: "#FFFFFF", availableQuantity: 0 }]);
       fetchProducts();
     } catch (error: any) {
@@ -243,23 +342,7 @@ export default function ProductsPage() {
       toast.error(errorMessage);
     }
   };
-
-  const addVariant = () => {
-    setVariants([...variants, { color: "", colorCode: "#FFFFFF", availableQuantity: 0 }]);
-  };
-
-  const removeVariant = (index: number) => {
-    if (variants.length > 1) {
-      setVariants(variants.filter((_, i) => i !== index));
-    }
-  };
-
-  const updateVariant = (index: number, field: string, value: any) => {
-    const updated = [...variants];
-    updated[index] = { ...updated[index], [field]: value };
-    setVariants(updated);
-  };
-
+  // ✅ PHẦN JSX RENDER - THÊM VÀO SAU PHẦN 1
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -311,10 +394,13 @@ export default function ProductsPage() {
                 {product.imageUrl && (
                   <div className="relative h-48 w-full bg-muted">
                     <Image
-                      src={product.imageUrl}
+                      src={product.imageUrl.startsWith('http') 
+                        ? product.imageUrl 
+                        : `http://localhost:8080${product.imageUrl}`}
                       alt={product.productName}
                       fill
                       className="object-cover"
+                      unoptimized 
                     />
                   </div>
                 )}
@@ -395,13 +481,16 @@ export default function ProductsPage() {
         </>
       )}
 
-      {/* Create/Edit Modal */}
+      {/* ✅ CREATE/EDIT MODAL - THÊM ĐẦY ĐỦ CÁC TRƯỜNG */}
       <EntityModal
         title={viewMode === "create" ? "Thêm sản phẩm mới" : "Sửa sản phẩm"}
         open={viewMode === "create" || viewMode === "edit"}
         onClose={() => {
           setViewMode("list");
           reset();
+          setTechnicalSpecs({});
+          setFeatures([]);
+          setVariants([{ color: "", colorCode: "#FFFFFF", availableQuantity: 0 }]);
         }}
         footer={
           <>
@@ -411,6 +500,8 @@ export default function ProductsPage() {
               onClick={() => {
                 setViewMode("list");
                 reset();
+                setTechnicalSpecs({});
+                setFeatures([]);
                 setVariants([{ color: "", colorCode: "#FFFFFF", availableQuantity: 0 }]);
               }}
             >
@@ -419,28 +510,17 @@ export default function ProductsPage() {
             <Button 
               type="button"
               onClick={async () => {
-                console.log("Button clicked, triggering form validation");
-                
-                // Validate form fields
                 const isValid = await trigger();
-                console.log("Form validation result:", isValid);
-                console.log("Form errors:", errors);
-                
-                // Validate variants separately
                 const validVariants = variants.filter((v) => v.color.trim() !== "");
+                
                 if (validVariants.length === 0) {
                   toast.error("Phải có ít nhất 1 màu sắc");
                   return;
                 }
                 
                 if (isValid) {
-                  const formData = getValues();
-                  console.log("Form values:", formData);
-                  console.log("Valid variants:", validVariants);
-                  onSubmit(formData);
+                  onSubmit(getValues());
                 } else {
-                  console.log("Validation failed, errors:", errors);
-                  // Show first error message
                   const firstError = Object.values(errors)[0];
                   if (firstError) {
                     toast.error(firstError.message as string);
@@ -456,80 +536,248 @@ export default function ProductsPage() {
           </>
         }
       >
-        <form id="product-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium">Tên sản phẩm *</label>
-            <Input {...register("productName")} className="mt-1" />
-            {errors.productName && (
-              <p className="text-sm text-destructive mt-1">{errors.productName.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="text-sm font-medium">Phiên bản</label>
-            <Input {...register("version")} className="mt-1" />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Giá bán lẻ đề xuất (VND) *</label>
-            <Input
-              type="number"
-              step="0.01"
-              {...register("msrp", { valueAsNumber: true })}
-              className="mt-1"
-            />
-            {errors.msrp && (
-              <p className="text-sm text-destructive mt-1">{errors.msrp.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="text-sm font-medium">Thương hiệu *</label>
-            <select
-              {...register("brandId", { valueAsNumber: true })}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
-            >
-              <option value="">Chọn thương hiệu</option>
-              {brands.map((brand) => (
-                <option key={brand.id} value={brand.id}>
-                  {brand.brandName}
-                </option>
-              ))}
-            </select>
-            {errors.brandId && (
-              <p className="text-sm text-destructive mt-1">{errors.brandId.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="text-sm font-medium">Mô tả</label>
-            <textarea
-              {...register("description")}
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium">URL hình ảnh</label>
-            <Input {...register("imageUrl")} className="mt-1" placeholder="/images/... hoặc https://..." />
-            {errors.imageUrl && (
-              <p className="text-sm text-destructive mt-1">{errors.imageUrl.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="text-sm font-medium">URL video</label>
-            <Input {...register("videoUrl")} className="mt-1" placeholder="https://..." />
-            {errors.videoUrl && (
-              <p className="text-sm text-destructive mt-1">{errors.videoUrl.message}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              {...register("isActive")}
-              className="h-4 w-4"
-            />
-            <label className="text-sm font-medium">Kích hoạt</label>
+        <div className="space-y-6">
+          {/* PHẦN 1: THÔNG TIN CƠ BẢN */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg border-b pb-2">📋 Thông tin cơ bản</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Tên sản phẩm *</label>
+                <Input {...register("productName")} className="mt-1" />
+                {errors.productName && (
+                  <p className="text-sm text-destructive mt-1">{errors.productName.message}</p>
+                )}
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Phiên bản</label>
+                <Input {...register("version")} className="mt-1" />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Giá bán lẻ đề xuất (VND) *</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  {...register("msrp", { valueAsNumber: true })}
+                  className="mt-1"
+                />
+                {errors.msrp && (
+                  <p className="text-sm text-destructive mt-1">{errors.msrp.message}</p>
+                )}
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Thương hiệu *</label>
+                <select
+                  {...register("brandId", { valueAsNumber: true })}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+                >
+                  <option value="">Chọn thương hiệu</option>
+                  {brands.map((brand) => (
+                    <option key={brand.id} value={brand.id}>
+                      {brand.brandName}
+                    </option>
+                  ))}
+                </select>
+                {errors.brandId && (
+                  <p className="text-sm text-destructive mt-1">{errors.brandId.message}</p>
+                )}
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Mô tả</label>
+              <textarea
+                {...register("description")}
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Hình ảnh sản phẩm</label>
+              <FileUpload
+                value={watch("imageUrl") || ""}
+                onChange={(url) => {
+                  setValue("imageUrl", url);
+                  trigger("imageUrl");
+                }}
+                onRemove={() => {
+                  setValue("imageUrl", "");
+                  trigger("imageUrl");
+                }}
+              />
+              {errors.imageUrl && (
+                <p className="text-sm text-destructive mt-1">{errors.imageUrl.message}</p>
+              )}
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">URL video</label>
+              <Input {...register("videoUrl")} className="mt-1" placeholder="https://..." />
+              {errors.videoUrl && (
+                <p className="text-sm text-destructive mt-1">{errors.videoUrl.message}</p>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                {...register("isActive")}
+                className="h-4 w-4"
+              />
+              <label className="text-sm font-medium">Kích hoạt</label>
+            </div>
           </div>
 
+          {/* ✅ PHẦN 2: THÔNG SỐ KỸ THUẬT */}
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="font-semibold text-lg border-b pb-2">⚡ Thông số kỹ thuật</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Dung lượng pin (kWh)</label>
+                <Input
+                  value={technicalSpecs.batteryCapacity || ""}
+                  onChange={(e) => updateTechnicalSpec("batteryCapacity", e.target.value)}
+                  placeholder="VD: 87.7 kWh"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Tầm hoạt động (km)</label>
+                <Input
+                  value={technicalSpecs.productRange || ""}
+                  onChange={(e) => updateTechnicalSpec("productRange", e.target.value)}
+                  placeholder="VD: 450 km"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Công suất (kW)</label>
+                <Input
+                  value={technicalSpecs.power || ""}
+                  onChange={(e) => updateTechnicalSpec("power", e.target.value)}
+                  placeholder="VD: 300 kW"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Tốc độ tối đa (km/h)</label>
+                <Input
+                  value={technicalSpecs.maxSpeed || ""}
+                  onChange={(e) => updateTechnicalSpec("maxSpeed", e.target.value)}
+                  placeholder="VD: 200 km/h"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Thời gian sạc</label>
+                <Input
+                  value={technicalSpecs.chargingTime || ""}
+                  onChange={(e) => updateTechnicalSpec("chargingTime", e.target.value)}
+                  placeholder="VD: 30 phút (DC)"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Kích thước (mm)</label>
+                <Input
+                  value={technicalSpecs.dimensions || ""}
+                  onChange={(e) => updateTechnicalSpec("dimensions", e.target.value)}
+                  placeholder="VD: 4750x1934x1667"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Trọng lượng (kg)</label>
+                <Input
+                  value={technicalSpecs.weight || ""}
+                  onChange={(e) => updateTechnicalSpec("weight", e.target.value)}
+                  placeholder="VD: 2100 kg"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Số chỗ ngồi</label>
+                <Input
+                  value={technicalSpecs.seatingCapacity || ""}
+                  onChange={(e) => updateTechnicalSpec("seatingCapacity", e.target.value)}
+                  placeholder="VD: 5 hoặc 7"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ✅ PHẦN 3: TÍNH NĂNG NỔI BẬT */}
+          <div className="space-y-4 border-t pt-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-lg">✨ Tính năng nổi bật</h3>
+              <Button type="button" variant="outline" size="sm" onClick={addFeature}>
+                <Plus className="h-4 w-4 mr-1" />
+                Thêm tính năng
+              </Button>
+            </div>
+            
+            {features.length === 0 ? (
+              <div className="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded border-2 border-dashed">
+                Chưa có tính năng nào. Click "Thêm tính năng" để bắt đầu.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {features.map((feature, index) => (
+                  <div key={index} className="p-3 border rounded-lg bg-gray-50">
+                    <div className="flex gap-2">
+                      <div className="flex-1 space-y-2">
+                        <Input
+                          value={feature.featureName}
+                          onChange={(e) => updateFeature(index, "featureName", e.target.value)}
+                          placeholder="Tên tính năng *"
+                        />
+                        <textarea
+                          value={feature.description}
+                          onChange={(e) => updateFeature(index, "description", e.target.value)}
+                          className="flex min-h-[60px] w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
+                          placeholder="Mô tả chi tiết..."
+                        />
+                        <Input
+                          value={feature.iconUrl || ""}
+                          onChange={(e) => updateFeature(index, "iconUrl", e.target.value)}
+                          placeholder="URL icon (tùy chọn)"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFeature(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* PHẦN 4: MÀU SẮC (GIỮ NGUYÊN) */}
           <div className="border-t pt-4">
             <div className="flex items-center justify-between mb-3">
-              <label className="text-sm font-medium">Màu sắc *</label>
+              <h3 className="font-semibold text-lg">🎨 Màu sắc *</h3>
               <Button type="button" variant="outline" size="sm" onClick={addVariant}>
                 <Plus className="h-4 w-4 mr-1" />
                 Thêm màu
@@ -592,16 +840,11 @@ export default function ProductsPage() {
                 </div>
               ))}
             </div>
-            {variants.filter((v) => v.color.trim() === "").length > 0 && (
-              <p className="text-sm text-destructive mt-2">
-                Vui lòng điền đầy đủ tên màu hoặc xóa các màu trống
-              </p>
-            )}
           </div>
-        </form>
+        </div>
       </EntityModal>
 
-      {/* Detail Modal */}
+      {/* DETAIL MODAL (GIỮ NGUYÊN) */}
       <EntityModal
         title="Chi tiết sản phẩm"
         open={viewMode === "detail" && selectedProduct !== null}
@@ -621,10 +864,15 @@ export default function ProductsPage() {
             {selectedProduct.imageUrl && (
               <div className="relative h-64 w-full bg-muted rounded-lg overflow-hidden">
                 <Image
-                  src={selectedProduct.imageUrl}
+                  src={
+                    selectedProduct.imageUrl.startsWith('http') 
+                      ? selectedProduct.imageUrl 
+                      : `http://localhost:8080${selectedProduct.imageUrl}`
+                  }
                   alt={selectedProduct.productName}
                   fill
                   className="object-cover"
+                  unoptimized
                 />
               </div>
             )}
@@ -658,6 +906,12 @@ export default function ProductsPage() {
               <label className="text-sm font-medium text-muted-foreground">Trạng thái</label>
               <p>{selectedProduct.isActive ? "Đang hoạt động" : "Ngưng hoạt động"}</p>
             </div>
+            {selectedProduct.description && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Mô tả</label>
+                <p className="text-sm">{selectedProduct.description}</p>
+              </div>
+            )}
           </div>
         )}
       </EntityModal>

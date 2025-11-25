@@ -12,8 +12,9 @@ import * as z from "zod";
 import toast from "react-hot-toast";
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
 import type { PaginatedResponse } from "@/types";
-import { Search, Plus, Eye, Edit, Trash2, RefreshCw, Send, Check, X, FileText, Download } from "lucide-react";
+import { Search, Plus, Eye, Edit, Trash2, RefreshCw, Send, Check, X, FileText, Download, ChevronDown } from "lucide-react";
 
+// ============ INTERFACES ============
 interface Quotation {
   id: number;
   quotationNumber: string;
@@ -37,6 +38,37 @@ interface Quotation {
   canConvertToOrder?: boolean;
 }
 
+interface Product {
+  productName: any;
+  id: number;
+  name: string;
+  model?: string;
+  price?: number;
+}
+
+interface Customer {
+  id: number;
+  fullName: string;
+  email?: string;
+  phoneNumber?: string;
+}
+
+interface Dealer {
+  dealerName: any;
+  id: number;
+  name: string;
+  code?: string;
+  address?: string;
+}
+
+interface SalesPerson {
+  id: number;
+  fullName: string;
+  email?: string;
+  phoneNumber?: string;
+}
+
+// ============ SCHEMA ============
 const quotationSchema = z.object({
   productId: z.number().min(1, "Vui lòng chọn sản phẩm"),
   customerId: z.number().min(1, "Vui lòng chọn khách hàng"),
@@ -52,6 +84,86 @@ const quotationSchema = z.object({
 
 type QuotationForm = z.infer<typeof quotationSchema>;
 
+// ============ SELECT COMPONENT ============
+interface SelectProps {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  options: Array<{ id: number; label: string; sublabel?: string }>;
+  error?: string;
+  placeholder?: string;
+  required?: boolean;
+}
+
+function Select({ label, value, onChange, options, error, placeholder, required }: SelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find(opt => opt.id === value);
+
+  return (
+    <div>
+      <label className="text-sm font-medium">
+        {label} {required && <span className="text-destructive">*</span>}
+      </label>
+      <div className="relative mt-1">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className={`w-full flex items-center justify-between px-3 py-2 border rounded-md bg-background text-left ${
+            error ? "border-destructive" : "border-input"
+          }`}
+        >
+          <div className="flex-1 min-w-0">
+            {selectedOption ? (
+              <div>
+                <div className="font-medium truncate">{selectedOption.label}</div>
+                {selectedOption.sublabel && (
+                  <div className="text-xs text-muted-foreground truncate">{selectedOption.sublabel}</div>
+                )}
+              </div>
+            ) : (
+              <span className="text-muted-foreground">{placeholder || "Chọn..."}</span>
+            )}
+          </div>
+          <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        </button>
+        
+        {isOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+            <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+              {options.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-muted-foreground">Không có dữ liệu</div>
+              ) : (
+                options.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => {
+                      onChange(option.id);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left hover:bg-accent transition-colors ${
+                      value === option.id ? "bg-accent" : ""
+                    }`}
+                  >
+                    <div className="font-medium">{option.label}</div>
+                    {option.sublabel && (
+                      <div className="text-xs text-muted-foreground">{option.sublabel}</div>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          </>
+        )}
+      </div>
+      {error && <p className="text-sm text-destructive mt-1">{error}</p>}
+    </div>
+  );
+}
+// ============ MAIN COMPONENT ============
+// Phần này tiếp nối từ Part 1
+
 export default function QuotationsPage() {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,21 +174,82 @@ export default function QuotationsPage() {
   const [viewMode, setViewMode] = useState<"list" | "create" | "edit" | "detail">("list");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  // Dropdown data
+  const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [dealers, setDealers] = useState<Dealer[]>([]);
+  const [salesPersons, setSalesPersons] = useState<SalesPerson[]>([]);
+  const [loadingDropdowns, setLoadingDropdowns] = useState(false);
+
   const {
     register,
     handleSubmit,
     reset,
     trigger,
     getValues,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<QuotationForm>({
     resolver: zodResolver(quotationSchema),
+    defaultValues: {
+      productId: 0,
+      customerId: 0,
+      dealerId: 0,
+      basePrice: 0,
+      registrationFee: 0,
+    }
   });
+
+  const watchedProductId = watch("productId");
+  const watchedCustomerId = watch("customerId");
+  const watchedDealerId = watch("dealerId");
+  const watchedSalesPersonId = watch("salesPersonId");
 
   useEffect(() => {
     fetchQuotations();
   }, [page, search, refreshTrigger]);
 
+  useEffect(() => {
+    if (viewMode === "create" || viewMode === "edit") {
+      fetchDropdownData();
+    }
+  }, [viewMode]);
+
+  const fetchDropdownData = async () => {
+    setLoadingDropdowns(true);
+    try {
+      const [productsRes, customersRes] = await Promise.all([
+        apiClient.get<PaginatedResponse<Product>>("/products?page=0&size=1000"),
+        apiClient.get<PaginatedResponse<Customer>>("/customers?page=0&size=1000"),
+      ]);
+      
+      setProducts(productsRes.data.content || []);
+      setCustomers(customersRes.data.content || []);
+
+      try {
+        const dealersRes = await apiClient.get<PaginatedResponse<Dealer>>("/dealers/filter?page=0&size=1000");
+        setDealers(dealersRes.data.content || []);
+      } catch (error) {
+        console.error("Error fetching dealers:", error);
+        setDealers([]);
+      }
+
+      try {
+        const salesPersonsRes = await apiClient.get<PaginatedResponse<SalesPerson>>("/users?page=0&size=1000");
+        setSalesPersons(salesPersonsRes.data.content || []);
+      } catch (error) {
+        console.error("Error fetching sales persons:", error);
+        setSalesPersons([]);
+      }
+    } catch (error) {
+      console.error("Error fetching dropdown data:", error);
+      toast.error("Không thể tải dữ liệu dropdown");
+    } finally {
+      setLoadingDropdowns(false);
+    }
+  };
+      
   const fetchQuotations = async () => {
     try {
       setLoading(true);
@@ -86,6 +259,9 @@ export default function QuotationsPage() {
         sortBy: "quotationDate",
         sortDirection: "desc",
       });
+      if (search) {
+        params.append("search", search);
+      }
       const response = await apiClient.get<PaginatedResponse<Quotation>>(
         `/quotations?${params.toString()}`
       );
@@ -110,6 +286,7 @@ export default function QuotationsPage() {
       productId: 0,
       customerId: 0,
       dealerId: 0,
+      salesPersonId: undefined,
       basePrice: 0,
       registrationFee: 0,
     });
@@ -138,23 +315,8 @@ export default function QuotationsPage() {
   };
 
   const handleDelete = async (quotation: Quotation) => {
-    // Kiểm tra trạng thái trước khi xóa
-    if (quotation.status === "ACCEPTED" || quotation.status === "CONVERTED") {
-      toast.error("Không thể xóa báo giá đã được chấp nhận hoặc đã chuyển thành đơn hàng");
+    if (!confirm(`Bạn có chắc muốn xóa báo giá "${quotation.quotationNumber}"?\n\nThao tác này không thể hoàn tác.`)) {
       return;
-    }
-    
-    // Kiểm tra có sales order liên quan không
-    if (quotation.salesPersonId || quotation.canConvertToOrder) {
-      const confirmAdvanced = confirm(
-        `Báo giá "${quotation.quotationNumber}" có thể có dữ liệu liên quan.\n\n` +
-        `Bạn có chắc chắn muốn xóa? Thao tác này không thể hoàn tác.`
-      );
-      if (!confirmAdvanced) return;
-    } else {
-      if (!confirm(`Bạn có chắc muốn xóa báo giá "${quotation.quotationNumber}"?`)) {
-        return;
-      }
     }
     
     try {
@@ -164,7 +326,6 @@ export default function QuotationsPage() {
     } catch (error: any) {
       console.error("Error deleting quotation:", error);
       
-      // Xử lý các loại lỗi cụ thể
       if (error.response?.status === 409) {
         toast.error("Không thể xóa: Báo giá đang được sử dụng trong đơn hàng hoặc giao dịch khác");
       } else if (error.response?.status === 400) {
@@ -278,6 +439,34 @@ export default function QuotationsPage() {
     }
   };
 
+  // Prepare dropdown options
+  const productOptions = products.map(p => ({
+    id: p.id,
+    label: p.productName,
+    sublabel: p.model ? `Model: ${p.model}` : undefined
+  }));
+
+  const customerOptions = customers.map(c => ({
+    id: c.id,
+    label: c.fullName,
+    sublabel: c.phoneNumber || c.email
+  }));
+
+  const dealerOptions = dealers.map(d => ({
+    id: d.id,
+    label: d.dealerName,
+    sublabel: d.code ? `Mã: ${d.code}` : undefined
+  }));
+
+  const salesPersonOptions = [
+    { id: 0, label: "Không chọn", sublabel: undefined },
+    ...salesPersons.map(s => ({
+      id: s.id,
+      label: s.fullName,
+      sublabel: s.email
+    }))
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -366,16 +555,16 @@ export default function QuotationsPage() {
                         <Button variant="outline" size="sm" onClick={() => handleSend(quotation)}>
                           <Send className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDelete(quotation)}
-                          title="Chỉ có thể xóa báo giá nháp"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </>
                     )}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(quotation)}
+                      title="Xóa báo giá"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                     {quotation.status === "SENT" && (
                       <>
                         <Button variant="outline" size="sm" onClick={() => handleAccept(quotation)}>
@@ -453,69 +642,83 @@ export default function QuotationsPage() {
                   toast.error("Vui lòng điền đầy đủ thông tin bắt buộc");
                 }
               }}
-              disabled={isSubmitting}
+              disabled={isSubmitting || loadingDropdowns}
             >
               {isSubmitting ? "Đang lưu..." : viewMode === "create" ? "Tạo" : "Cập nhật"}
             </Button>
           </>
         }
       >
-        <form className="space-y-4">
-          <div>
-            <label className="text-sm font-medium">Sản phẩm *</label>
-            <Input
-              type="number"
-              {...register("productId", { valueAsNumber: true })}
-              className="mt-1"
-            />
-            {errors.productId && (
-              <p className="text-sm text-destructive mt-1">{errors.productId.message}</p>
-            )}
+        {loadingDropdowns ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-muted-foreground">Đang tải dữ liệu...</div>
           </div>
-          <div>
-            <label className="text-sm font-medium">Khách hàng *</label>
-            <Input
-              type="number"
-              {...register("customerId", { valueAsNumber: true })}
-              className="mt-1"
+        ) : (
+          <form className="space-y-4">
+            <Select
+              label="Sản phẩm"
+              value={watchedProductId}
+              onChange={(value) => setValue("productId", value)}
+              options={productOptions}
+              error={errors.productId?.message}
+              placeholder="Chọn sản phẩm"
+              required
             />
-            {errors.customerId && (
-              <p className="text-sm text-destructive mt-1">{errors.customerId.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="text-sm font-medium">Đại lý *</label>
-            <Input
-              type="number"
-              {...register("dealerId", { valueAsNumber: true })}
-              className="mt-1"
+
+            <Select
+              label="Khách hàng"
+              value={watchedCustomerId}
+              onChange={(value) => setValue("customerId", value)}
+              options={customerOptions}
+              error={errors.customerId?.message}
+              placeholder="Chọn khách hàng"
+              required
             />
-            {errors.dealerId && (
-              <p className="text-sm text-destructive mt-1">{errors.dealerId.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="text-sm font-medium">Giá cơ bản (VND) *</label>
-            <Input
-              type="number"
-              step="0.01"
-              {...register("basePrice", { valueAsNumber: true })}
-              className="mt-1"
+
+            <Select
+              label="Đại lý"
+              value={watchedDealerId}
+              onChange={(value) => setValue("dealerId", value)}
+              options={dealerOptions}
+              error={errors.dealerId?.message}
+              placeholder="Chọn đại lý"
+              required
             />
-            {errors.basePrice && (
-              <p className="text-sm text-destructive mt-1">{errors.basePrice.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="text-sm font-medium">Phí đăng ký (VND)</label>
-            <Input
-              type="number"
-              step="0.01"
-              {...register("registrationFee", { valueAsNumber: true })}
-              className="mt-1"
+
+            <Select
+              label="Nhân viên kinh doanh"
+              value={watchedSalesPersonId ?? 0}
+              onChange={(value) => {
+                setValue("salesPersonId", value === 0 ? undefined : value, { shouldValidate: true });
+              }}
+              options={salesPersonOptions}
+              placeholder="Chọn nhân viên (tùy chọn)"
             />
-          </div>
-        </form>
+
+            <div>
+              <label className="text-sm font-medium">Giá cơ bản (VND) *</label>
+              <Input
+                type="number"
+                step="0.01"
+                {...register("basePrice", { valueAsNumber: true })}
+                className="mt-1"
+              />
+              {errors.basePrice && (
+                <p className="text-sm text-destructive mt-1">{errors.basePrice.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Phí đăng ký (VND)</label>
+              <Input
+                type="number"
+                step="0.01"
+                {...register("registrationFee", { valueAsNumber: true })}
+                className="mt-1"
+              />
+            </div>
+          </form>
+        )}
       </EntityModal>
 
       {/* Detail Modal */}
@@ -570,6 +773,10 @@ export default function QuotationsPage() {
             <div>
               <label className="text-sm font-medium text-muted-foreground">Sản phẩm</label>
               <p>{selectedQuotation.productName}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Đại lý</label>
+              <p>{selectedQuotation.dealerName}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Giá cơ bản</label>

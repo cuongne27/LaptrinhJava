@@ -4,6 +4,7 @@ import com.evm.backend.entity.SalesOrder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -142,6 +143,10 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
             @Param("status") String status,
             @Param("salesPersonId") Long salesPersonId
     );
+
+    @Modifying
+    @Query(value = "DELETE FROM sales_order WHERE order_id = :id", nativeQuery = true)
+    void forceDeleteById(@Param("id") Long id);
 
     /**
      * Lấy pending orders của customer

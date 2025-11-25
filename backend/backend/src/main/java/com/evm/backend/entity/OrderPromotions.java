@@ -2,42 +2,31 @@
 package com.evm.backend.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
+// Trong OrderPromotions.java
 @Entity
-@Data
+@Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true) // <--- Thêm vào
 @Table(name = "order_promotions")
 public class OrderPromotions {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_promotion_id")
+    @EqualsAndHashCode.Include // <--- Chỉ dùng ID cho equals/hashCode
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY) // <--- Khuyến nghị dùng LAZY
     @JoinColumn(name = "order_id")
+    @ToString.Exclude // <--- Thêm vào
     private SalesOrder order;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY) // <--- Khuyến nghị dùng LAZY
     @JoinColumn(name = "promotion_id")
+    @ToString.Exclude // <--- Thêm vào
     private Promotion promotion;
-
-    // OrderPromotions.java
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof OrderPromotions)) return false;
-        OrderPromotions that = (OrderPromotions) o;
-        return id != null && id.equals(that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
 }

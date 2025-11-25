@@ -29,6 +29,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpec
             "WHERE p.id = :paymentId")
     Optional<Payment> findByIdWithDetails(@Param("paymentId") Long paymentId);
 
+    // Trong PaymentRepository.java
+    @Query("SELECT p.status, p.order.id FROM Payment p WHERE p.id = :id")
+    List<Object[]> findStatusAndOrderIdById(Long id);
+
     /**
      * Find payments by order ID, ordered by payment date descending
      */

@@ -2,10 +2,8 @@
 package com.evm.backend.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -14,6 +12,8 @@ import java.time.LocalDate;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString(exclude = {"order", "payer"}) // Loại trừ quan hệ
+@EqualsAndHashCode(exclude = {"order", "payer"})
 @Table(name = "payment")
 public class Payment {
     @Id

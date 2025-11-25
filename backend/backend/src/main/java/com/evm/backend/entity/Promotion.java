@@ -2,16 +2,15 @@
 package com.evm.backend.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Set;
 
 @Entity
-@Data
+@Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -46,6 +45,14 @@ public class Promotion {
     @Column(name = "conditions", columnDefinition = "TEXT")
     private String conditions;
 
-    @OneToMany(mappedBy = "promotion")
+    @OneToMany(
+            mappedBy = "promotion",
+            // THÊM: Cấu hình xóa phân tầng
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+//    @Builder.Default
+    @ToString.Exclude // <--- Thêm vào
+    @EqualsAndHashCode.Exclude // <--- Thêm vào
     private Set<OrderPromotions> orderPromotions;
 }

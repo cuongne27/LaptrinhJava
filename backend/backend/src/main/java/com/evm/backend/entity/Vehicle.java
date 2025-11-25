@@ -2,10 +2,8 @@
 package com.evm.backend.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -14,6 +12,8 @@ import java.util.Set;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString(exclude = {"product", "dealer", "salesOrders", "supportTickets"}) // Loại trừ tất cả quan hệ
+//@EqualsAndHashCode(onlyExplicitlyIncluded = true) // Chỉ sử dụng ID cho equals/hashcode
 @Table(name = "vehicle")
 public class Vehicle {
     @Id

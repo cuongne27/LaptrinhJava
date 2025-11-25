@@ -22,7 +22,6 @@ export function EntityModal({
   children,
   footer,
 }: EntityModalProps) {
-  // Use useCallback to memoize the function for event listener stability
   const handleEscape = useCallback((event: KeyboardEvent) => {
     if (event.key === "Escape") {
       onClose();
@@ -31,46 +30,45 @@ export function EntityModal({
 
   useEffect(() => {
     if (open) {
-      // 1. Manage Body Scroll: Disable scroll when open
       document.body.style.overflow = "hidden";
-
-      // 2. Escape Key Handling: Add event listener for 'Escape' key press
       document.addEventListener("keydown", handleEscape);
     } else {
-      // Restore scroll when closed
       document.body.style.overflow = "unset";
       document.removeEventListener("keydown", handleEscape);
     }
 
-    // 3. Cleanup: Ensure the scroll is restored and listener is removed on unmount or when 'open' changes
     return () => {
       document.body.style.overflow = "unset";
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [open, handleEscape]); // Dependency array includes 'open' and the memoized 'handleEscape'
+  }, [open, handleEscape]);
 
   if (!open) return null;
 
-  // Function to close the modal when clicking on the overlay backdrop
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Only close if the click occurred directly on the backdrop div (the first child div)
     if (e.target === e.currentTarget) {
       onClose();
     }
   };
 
   return (
-    // Add onClick handler to the main fixed container for overlay closing
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
       onClick={handleOverlayClick}
+      style={{ margin: 0 }} // ✅ Override any parent margin
     >
-      {/* Backdrop removed as the main container handles the click and styling */}
-      <div className="absolute inset-0 bg-[rgba(12,16,24,0.65)] dark:bg-[rgba(4,6,9,0.78)] backdrop-blur-sm" />
+      {/* ✅ Backdrop che TOÀN BỘ viewport */}
+      <div 
+        className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm" 
+        style={{ margin: 0 }} // ✅ Ensure no margin
+      />
       
-      {/* Modal content container - this is where the click should NOT close the modal */}
-      <div className="relative z-10 w-full max-w-2xl px-4 sm:px-6">
-        <Card className="max-h-[90vh] overflow-hidden border border-border/60 bg-card/95 dark:bg-card/80 shadow-2xl rounded-2xl modal-pop">
+      {/* Modal content */}
+      <div 
+        className="relative z-10 w-full max-w-2xl"
+        onClick={(e) => e.stopPropagation()} // ✅ Prevent closing when clicking inside modal
+      >
+        <Card className="max-h-[90vh] overflow-hidden border border-border/60 bg-card shadow-2xl rounded-2xl animate-in zoom-in-95 duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-border/60">
             <div>
               <CardTitle>{title}</CardTitle>
@@ -85,7 +83,7 @@ export function EntityModal({
               <X className="h-4 w-4" />
             </Button>
           </CardHeader>
-          <CardContent className="space-y-4 overflow-y-auto max-h-[70vh] px-6 py-6">
+          <CardContent className="space-y-4 overflow-y-auto max-h-[calc(90vh-180px)] px-6 py-6">
             {children}
           </CardContent>
           {footer && (

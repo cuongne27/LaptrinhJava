@@ -14,9 +14,12 @@ import { formatDateTime, getStatusColor, getPriorityColor } from "@/lib/utils";
 import type { PaginatedResponse } from "@/types";
 import { Search, Plus, Eye, Edit, Trash2, RefreshCw, Check, X, UserPlus } from "lucide-react";
 
+type ViewMode = "list" | "create" | "edit" | "detail";
+
 interface SupportTicket {
+  id: number;
   ticketNumber: string;
-  description: string;
+  description: string | null; // Cập nhật để chấp nhận null
   status: string;
   priority: string;
   category: string;
@@ -47,6 +50,7 @@ export default function SupportTicketsPage() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const {
     register,
@@ -98,7 +102,9 @@ export default function SupportTicketsPage() {
   const handleEdit = (ticket: SupportTicket) => {
     reset({
       customerId: ticket.customerId,
-      description: ticket.description,
+      description: ticket.description ?? "", // Thêm ?? ""
+      priority: ticket.priority,
+      category: ticket.category,
       salesOrderId: ticket.salesOrderId,
       vehicleId: ticket.vehicleId,
     });
@@ -127,8 +133,12 @@ export default function SupportTicketsPage() {
 
   const handleAssign = async (ticket: SupportTicket) => {
     try {
+      // await apiClient.patch(`/support-tickets/${ticket.id}/assign-me`);
+      // toast.success("Gán ticket thành công!");
       fetchTickets();
+    } catch (error) {
       console.error("Error assigning ticket:", error);
+      toast.error("Không thể gán ticket");
     }
   };
 
@@ -157,8 +167,10 @@ export default function SupportTicketsPage() {
   const onSubmit = async (data: TicketForm) => {
     try {
       if (viewMode === "create") {
+        await apiClient.post("/support-tickets", data);
         toast.success("Tạo ticket thành công!");
       } else if (viewMode === "edit" && selectedTicket) {
+        await apiClient.put(`/support-tickets/${selectedTicket.id}`, data);
         toast.success("Cập nhật thành công!");
       }
       setViewMode("list");
@@ -219,32 +231,62 @@ export default function SupportTicketsPage() {
         </div>
       ) : (
         <>
+          <div className="space-y-4">
             {tickets.map((ticket) => (
-                        {ticket.status}
-                      </span>
-                      </span>
-                    </div>
+              <Card key={ticket.ticketNumber}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg">
+                      #{ticket.id} - {ticket.customerName}
+                    </CardTitle>
+                    <CardDescription className="text-sm">
+                      {/* SỬA LỖI SUBSTRING: Dùng Nullish Coalescing (?? "") để đảm bảo description là chuỗi */}
+                      {(ticket.description ?? "").substring(0, 100)}...
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(ticket.priority)}`}>
+                      {ticket.priority}
+                    </span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(ticket.status)}`}>
+                      {ticket.status}
+                    </span>
                   </div>
                 </CardHeader>
+                <CardContent className="flex items-center justify-between p-4 pt-0">
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <div>
+                      <strong>Danh mục:</strong> {ticket.category}
                     </div>
                     {ticket.assignedUserName && (
+                      <div>
+                        <strong>Phụ trách:</strong> {ticket.assignedUserName}
                       </div>
                     )}
+                    <div>
+                      <strong>Ngày tạo:</strong> {formatDateTime(ticket.createdAt)}
                     </div>
                   </div>
+                  <div className="flex space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => handleView(ticket)}>
                       <Eye className="h-4 w-4" />
                     </Button>
                     {!ticket.assignedUserId && (
+                      <Button variant="secondary" size="sm" onClick={() => handleAssign(ticket)}>
                         <UserPlus className="h-4 w-4" />
                       </Button>
                     )}
                     {ticket.status === "OPEN" && (
+                      <Button variant="default" size="sm" onClick={() => handleClose(ticket)}>
                         <Check className="h-4 w-4" />
                       </Button>
                     )}
                     {ticket.status === "CLOSED" && (
+                      <Button variant="secondary" size="sm" onClick={() => handleReopen(ticket)}>
+                        <RefreshCw className="h-4 w-4" />
                       </Button>
                     )}
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(ticket)}>
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
@@ -288,18 +330,22 @@ export default function SupportTicketsPage() {
       <EntityModal
         title={viewMode === "create" ? "Thêm ticket mới" : "Sửa ticket"}
         open={viewMode === "create" || viewMode === "edit"}
+        onClose={() => setViewMode("list")}
         footer={
           <>
+            <Button variant="outline" onClick={() => setViewMode("list")}>
               Hủy
             </Button>
             <Button
               disabled={isSubmitting}
+              onClick={handleSubmit(onSubmit)}
             >
               {isSubmitting ? "Đang lưu..." : viewMode === "create" ? "Tạo" : "Cập nhật"}
             </Button>
           </>
         }
       >
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="text-sm font-medium">Khách hàng ID *</label>
             <Input
@@ -312,10 +358,6 @@ export default function SupportTicketsPage() {
             )}
           </div>
           <div>
-            <label className="text-sm font-medium">Tiêu đề *</label>
-            )}
-          </div>
-          <div>
             <label className="text-sm font-medium">Mô tả *</label>
             <textarea
               {...register("description")}
@@ -325,38 +367,41 @@ export default function SupportTicketsPage() {
               <p className="text-sm text-destructive mt-1">{errors.description.message}</p>
             )}
           </div>
-          <div>
-            <label className="text-sm font-medium">Độ ưu tiên *</label>
-            <select
-              {...register("priority")}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
-            >
-              <option value="">Chọn độ ưu tiên</option>
-              <option value="LOW">Thấp</option>
-              <option value="MEDIUM">Trung bình</option>
-              <option value="HIGH">Cao</option>
-              <option value="URGENT">Khẩn cấp</option>
-            </select>
-            {errors.priority && (
-              <p className="text-sm text-destructive mt-1">{errors.priority.message}</p>
-            )}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Độ ưu tiên *</label>
+              <select
+                {...register("priority")}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+              >
+                <option value="">Chọn độ ưu tiên</option>
+                <option value="LOW">Thấp</option>
+                <option value="MEDIUM">Trung bình</option>
+                <option value="HIGH">Cao</option>
+                <option value="URGENT">Khẩn cấp</option>
+              </select>
+              {errors.priority && (
+                <p className="text-sm text-destructive mt-1">{errors.priority.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="text-sm font-medium">Danh mục *</label>
+              <select
+                {...register("category")}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+              >
+                <option value="">Chọn danh mục</option>
+                <option value="TECHNICAL">Kỹ thuật</option>
+                <option value="BILLING">Thanh toán</option>
+                <option value="SALES">Bán hàng</option>
+                <option value="OTHER">Khác</option>
+              </select>
+              {errors.category && (
+                <p className="text-sm text-destructive mt-1">{errors.category.message}</p>
+              )}
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium">Danh mục *</label>
-            <select
-              {...register("category")}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
-            >
-              <option value="">Chọn danh mục</option>
-              <option value="TECHNICAL">Kỹ thuật</option>
-              <option value="BILLING">Thanh toán</option>
-              <option value="SALES">Bán hàng</option>
-              <option value="OTHER">Khác</option>
-            </select>
-            {errors.category && (
-              <p className="text-sm text-destructive mt-1">{errors.category.message}</p>
-            )}
-          </div>
+        </form>
       </EntityModal>
 
       {/* Detail Modal */}
@@ -370,11 +415,14 @@ export default function SupportTicketsPage() {
         footer={
           <>
             {selectedTicket && !selectedTicket.assignedUserId && (
+              <Button variant="secondary" onClick={() => selectedTicket && handleAssign(selectedTicket)}>
                 <UserPlus className="mr-2 h-4 w-4" />
+                Gán cho tôi
               </Button>
             )}
             <Button onClick={() => selectedTicket && handleEdit(selectedTicket)}>
               <Edit className="mr-2 h-4 w-4" />
+              Chỉnh sửa
             </Button>
           </>
         }
@@ -387,36 +435,46 @@ export default function SupportTicketsPage() {
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Tiêu đề</label>
+              <p>{selectedTicket.description ?? "Không có tiêu đề"}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Mô tả</label>
-              <p>{selectedTicket.description}</p>
+              <p>{selectedTicket.description ?? "Không có mô tả"}</p>
             </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Trạng thái</label>
-              <p>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(selectedTicket.status)}`}>
-                  {selectedTicket.status}
-                </span>
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Độ ưu tiên</label>
-              <p>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(selectedTicket.priority)}`}>
-                </span>
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Khách hàng</label>
-              <p>{selectedTicket.customerName}</p>
-            </div>
-            {selectedTicket.assignedUserName && (
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Người phụ trách</label>
-                <p>{selectedTicket.assignedUserName}</p>
+                <label className="text-sm font-medium text-muted-foreground">Trạng thái</label>
+                <p>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(selectedTicket.status)}`}>
+                    {selectedTicket.status}
+                  </span>
+                </p>
               </div>
-            )}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Độ ưu tiên</label>
+                <p>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(selectedTicket.priority)}`}>
+                    {selectedTicket.priority}
+                  </span>
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Khách hàng</label>
+                <p>{selectedTicket.customerName}</p>
+              </div>
+              {selectedTicket.assignedUserName && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Người phụ trách</label>
+                  <p>{selectedTicket.assignedUserName}</p>
+                </div>
+              )}
+            </div>
+            <div>
+                <label className="text-sm font-medium text-muted-foreground">Ngày tạo</label>
+                <p>{formatDateTime(selectedTicket.createdAt)}</p>
+            </div>
           </div>
         )}
       </EntityModal>
