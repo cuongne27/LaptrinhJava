@@ -40,6 +40,11 @@ const promotionSchema = z.object({
 
 type PromotionForm = z.infer<typeof promotionSchema>;
 
+// Helper function to format discount value based on type
+const formatDiscountValue = (value: number, type: string) => {
+  return type === "PERCENTAGE" ? `${value}%` : formatCurrency(value);
+};
+
 export default function PromotionsPage() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -415,7 +420,7 @@ export default function PromotionsPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Giá trị</span>
                       <span className="font-bold text-primary">
-                        {formatCurrency(promotion.discountValue)}
+                        {formatDiscountValue(promotion.discountValue, promotion.discountType)}
                       </span>
                     </div>
                   </div>
@@ -604,7 +609,7 @@ export default function PromotionsPage() {
             <div>
               <label className="text-sm font-medium text-muted-foreground">Giá trị</label>
               <p className="text-2xl font-bold text-primary">
-                {formatCurrency(selectedPromotion.discountValue)}
+                {formatDiscountValue(selectedPromotion.discountValue, selectedPromotion.discountType)}
               </p>
             </div>
             <div>
