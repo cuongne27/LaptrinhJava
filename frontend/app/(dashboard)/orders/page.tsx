@@ -156,10 +156,10 @@ export default function OrdersPage() {
     }
   };
 
-  const handleUpdateStatus = async (orderId: number, status: string) => {
+  const handleUpdateStatus = async (orderId: number, newStatus: string) => {
     try {
-      // ✅ FIX: Đổi từ PATCH sang PUT
-      await apiClient.put(`/sales-orders/${orderId}/status`, { status });
+      // ✅ Sử dụng PATCH với query parameter như backend đã define
+      await apiClient.patch(`/sales-orders/${orderId}/status?status=${newStatus}`);
       toast.success("Cập nhật trạng thái thành công!");
       fetchOrders();
     } catch (error: any) {
@@ -176,6 +176,8 @@ export default function OrdersPage() {
         toast.success("Tạo đơn hàng thành công!");
       } else if (viewMode === "edit" && selectedOrder) {
         await apiClient.put(`/sales-orders/${selectedOrder.id}`, data);
+        // console.log("data", data);
+        // console.log("selectedOrder", selectedOrder);
         toast.success("Cập nhật thành công!");
       }
       setViewMode("list");

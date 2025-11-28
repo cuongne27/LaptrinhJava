@@ -24,13 +24,24 @@ interface Dealer {
   name: string;
 }
 
+// const vehicleSchema = z.object({
+//   id: z.string().min(1, "Vehicle ID không được để trống"),
+//   vin: z.string().min(1, "VIN không được để trống"),
+//   batterySerial: z.string().optional(),
+//   color: z.string().optional(),
+//   manufactureDate: z.string().optional(),
+//   status: z.string().optional(),
+//   productId: z.number().min(1, "Vui lòng chọn sản phẩm"),
+//   dealerId: z.number().min(1, "Vui lòng chọn đại lý"),
+// });
+
 const vehicleSchema = z.object({
-  id: z.string().min(1, "Vehicle ID không được để trống"),
-  vin: z.string().min(1, "VIN không được để trống"),
-  batterySerial: z.string().optional(),
-  color: z.string().optional(),
-  manufactureDate: z.string().optional(),
-  status: z.string().optional(),
+  id: z.string().min(1, "Vehicle ID không được để trống").transform(val => val.trim()),
+  vin: z.string().min(1, "VIN không được để trống").transform(val => val.trim()),
+  batterySerial: z.string().optional().transform(val => val?.trim() || ""),
+  color: z.string().optional().transform(val => val?.trim() || ""),
+  manufactureDate: z.string().optional().transform(val => val?.trim() || ""),
+  status: z.string().optional().transform(val => val?.trim() || ""),
   productId: z.number().min(1, "Vui lòng chọn sản phẩm"),
   dealerId: z.number().min(1, "Vui lòng chọn đại lý"),
 });
@@ -246,13 +257,46 @@ export default function VehiclesPage() {
     }
   };
 
+  // const onSubmit = async (data: VehicleForm) => {
+  //   try {
+  //     if (viewMode === "create") {
+  //       await apiClient.post("/vehicles", data);
+  //       toast.success("Tạo xe thành công!");
+  //     } else if (viewMode === "edit" && selectedVehicle) {
+  //       await apiClient.put(`/vehicles/${selectedVehicle.id}`, data);
+  //       toast.success("Cập nhật thành công!");
+  //     }
+  //     setViewMode("list");
+  //     reset();
+  //     fetchVehicles();
+  //   } catch (error: any) {
+  //     console.error("Error saving vehicle:", error);
+  //     const errorMessage =
+  //       error.response?.data?.message ||
+  //       error.response?.data?.error ||
+  //       "Không thể lưu xe";
+  //     toast.error(errorMessage);
+  //   }
+  // };
+
   const onSubmit = async (data: VehicleForm) => {
     try {
+      // Trim all string fields to remove whitespace and newlines
+      const cleanedData = {
+        ...data,
+        id: data.id?.trim() || "",
+        vin: data.vin?.trim() || "",
+        batterySerial: data.batterySerial?.trim() || "",
+        color: data.color?.trim() || "",
+        manufactureDate: data.manufactureDate?.trim() || "",
+        status: data.status?.trim() || "",
+      };
+  
       if (viewMode === "create") {
-        await apiClient.post("/vehicles", data);
+        await apiClient.post("/vehicles", cleanedData);
         toast.success("Tạo xe thành công!");
       } else if (viewMode === "edit" && selectedVehicle) {
-        await apiClient.put(`/vehicles/${selectedVehicle.id}`, data);
+        await apiClient.put(`/vehicles/${selectedVehicle.id}`, cleanedData);
         toast.success("Cập nhật thành công!");
       }
       setViewMode("list");

@@ -62,6 +62,7 @@ interface Dealer {
 }
 
 interface SalesPerson {
+  userId: any;
   id: number;
   fullName: string;
   email?: string;
@@ -209,6 +210,10 @@ export default function QuotationsPage() {
   useEffect(() => {
     fetchQuotations();
   }, [page, search, refreshTrigger]);
+
+  useEffect(() => {
+    register("salesPersonId");
+  }, [register]);
 
   useEffect(() => {
     if (viewMode === "create" || viewMode === "edit") {
@@ -461,7 +466,7 @@ export default function QuotationsPage() {
   const salesPersonOptions = [
     { id: 0, label: "Không chọn", sublabel: undefined },
     ...salesPersons.map(s => ({
-      id: s.id,
+      id: s.userId,
       label: s.fullName,
       sublabel: s.email
     }))
@@ -687,9 +692,21 @@ export default function QuotationsPage() {
 
             <Select
               label="Nhân viên kinh doanh"
+              // Sử dụng (?? 0) để đảm bảo luôn có giá trị số truyền vào Select
               value={watchedSalesPersonId ?? 0}
               onChange={(value) => {
-                setValue("salesPersonId", value === 0 ? undefined : value, { shouldValidate: true });
+                // Ép kiểu Number() để chắc chắn ID là số, tránh lỗi so sánh chuỗi
+                console.log(value)
+                const numberValue = Number(value);
+                setValue(
+                  "salesPersonId", 
+                  numberValue === 0 ? undefined : numberValue, 
+                  { 
+                    shouldValidate: true,
+                    shouldDirty: true, // Đánh dấu form đã thay đổi
+                    shouldTouch: true  // Đánh dấu trường đã được tương tác
+                  }
+                );
               }}
               options={salesPersonOptions}
               placeholder="Chọn nhân viên (tùy chọn)"

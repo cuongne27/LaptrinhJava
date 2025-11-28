@@ -11,7 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import toast from "react-hot-toast";
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
-import type { PaginatedResponse } from "@/types";
+import type { PaginatedResponse, SalesOrder } from "@/types";
 import { Search, Plus, Eye, Edit, Trash2, RefreshCw, Check, X } from "lucide-react";
 
 interface Payment {
@@ -59,6 +59,7 @@ const paymentTypeOptions = [
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [orders, setOrders] = useState<SalesOrder[]>([]); // ✅ Thêm state cho orders
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -81,6 +82,7 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     fetchPayments();
+    fetchOrders(); // ✅ Fetch orders khi component mount
   }, [page, search]);
 
   const fetchPayments = async () => {
@@ -107,6 +109,19 @@ export default function PaymentsPage() {
       toast.error("Không thể tải danh sách thanh toán");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ Thêm hàm fetch orders
+  const fetchOrders = async () => {
+    try {
+      const response = await apiClient.get<PaginatedResponse<SalesOrder>>(
+        "/sales-orders?size=100"
+      );
+      setOrders(response.data.content || []);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      toast.error("Không thể tải danh sách đơn hàng");
     }
   };
 
@@ -211,13 +226,13 @@ export default function PaymentsPage() {
         }
         
         console.log("📤 Updating payment ID:", selectedPaymentId);
-        await apiClient.put(`/payments/${selectedPaymentId}`, data); // ✅ DÙNG selectedPaymentId
+        await apiClient.put(`/payments/${selectedPaymentId}`, data);
         toast.success("Cập nhật thành công!");
       }
       
       setViewMode("list");
       setSelectedPayment(null);
-      setSelectedPaymentId(null); // ✅ RESET
+      setSelectedPaymentId(null);
       reset();
       fetchPayments();
     } catch (error: any) {
@@ -234,7 +249,7 @@ export default function PaymentsPage() {
   const handleModalClose = () => {
     setViewMode("list");
     setSelectedPayment(null);
-    setSelectedPaymentId(null); // ✅ RESET
+    setSelectedPaymentId(null);
     reset();
   };
 
@@ -396,17 +411,25 @@ export default function PaymentsPage() {
         }
       >
         <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          {/* ✅ THAY ĐỔI: Dropdown đơn hàng với thông tin đầy đủ */}
           <div>
-            <label className="text-sm font-medium">Đơn hàng ID *</label>
-            <Input
-              type="number"
+            <label className="text-sm font-medium">Đơn hàng *</label>
+            <select
               {...register("orderId", { valueAsNumber: true })}
-              className="mt-1"
-            />
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+            >
+              <option value={0}>Chọn đơn hàng</option>
+              {orders.map((order) => (
+                <option key={order.id} value={order.id}>
+                  #{order.id} - {order.customerName} - {formatCurrency(order.totalPrice)} - {formatDate(order.orderDate)}
+                </option>
+              ))}
+            </select>
             {errors.orderId && (
               <p className="text-sm text-destructive mt-1">{errors.orderId.message}</p>
             )}
           </div>
+
           <div>
             <label className="text-sm font-medium">Số tiền (VND) *</label>
             <Input

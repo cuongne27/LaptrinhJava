@@ -746,29 +746,48 @@ public class QuotationServiceImpl implements QuotationService {
 
     private void addFooter(Document document, Quotation quotation, Font fontHeader, Font fontNormal, Font fontSmall)
             throws DocumentException {
-        document.add(new Paragraph(" "));
-        document.add(new Paragraph(" "));
+
+        // Thêm khoảng trống vừa phải
+        document.add(new Paragraph("\n", fontSmall));
 
         PdfPTable signatureTable = new PdfPTable(2);
         signatureTable.setWidthPercentage(100);
-//        signatureTable.setSpacingBefore(20);
+        signatureTable.setSpacingBefore(10);
+        signatureTable.setKeepTogether(true);
+
+        try {
+            signatureTable.setWidths(new float[]{1f, 1f});
+        } catch (DocumentException e) {
+            e.printStackTrace();
+        }
 
         // Customer signature
         PdfPCell customerCell = new PdfPCell();
         customerCell.setBorder(Rectangle.NO_BORDER);
         customerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        customerCell.setPaddingTop(5);
+        customerCell.setPaddingBottom(5);
+
         Paragraph customer = new Paragraph();
+        customer.setAlignment(Element.ALIGN_CENTER);
         customer.add(new Phrase("KHÁCH HÀNG\n", fontHeader));
-        customer.add(new Phrase("(Ký và ghi rõ họ tên)\n\n\n\n\n", fontSmall));
+        customer.add(new Phrase("(Ký và ghi rõ họ tên)", fontSmall));
+        customer.add(new Phrase("\n\n\n", fontSmall)); // 3 dòng cho chữ ký
         customerCell.addElement(customer);
 
         // Sales person signature
         PdfPCell salesCell = new PdfPCell();
         salesCell.setBorder(Rectangle.NO_BORDER);
         salesCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        salesCell.setPaddingTop(5);
+        salesCell.setPaddingBottom(5);
+
         Paragraph sales = new Paragraph();
-        sales.add(new Phrase("                              NHÂN VIÊN TƯ VẤN\n", fontHeader));
-        sales.add(new Phrase("                                                      (Ký và ghi rõ họ tên)\n\n\n\n", fontSmall));
+        sales.setAlignment(Element.ALIGN_CENTER);
+        sales.add(new Phrase("NHÂN VIÊN TƯ VẤN\n", fontHeader));
+        sales.add(new Phrase("(Ký và ghi rõ họ tên)", fontSmall));
+        sales.add(new Phrase("\n\n", fontSmall)); // Chỉ 2 dòng trước tên
+
         if (quotation.getSalesPerson() != null) {
             sales.add(new Phrase(quotation.getSalesPerson().getFullName(), fontNormal));
         }

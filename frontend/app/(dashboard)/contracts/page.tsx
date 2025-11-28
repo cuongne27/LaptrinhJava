@@ -28,12 +28,25 @@ interface Contract {
   createdAt: string;
 }
 
+interface Brand {
+  brandName: ReactNode;
+  id: number;
+  name: string;
+}
+
+interface Dealer {
+  id: number;
+  dealerName: string;
+}
+
 const contractSchema = z.object({
   brandId: z.number().min(1, "Vui lòng chọn thương hiệu"),
   dealerId: z.number().min(1, "Vui lòng chọn đại lý"),
   startDate: z.string().min(1, "Vui lòng chọn ngày bắt đầu"),
   endDate: z.string().min(1, "Vui lòng chọn ngày kết thúc"),
   commissionRate: z.number().min(0, "Tỷ lệ hoa hồng phải >= 0").max(100, "Tỷ lệ hoa hồng phải <= 100"),
+  contractTerms: z.string().min(1, "Vui lòng nhập điều khoản hợp đồng"),
+  salesTarget: z.number().min(0, "Mục tiêu doanh số phải >= 0"),
 });
 
 type ContractForm = z.infer<typeof contractSchema>;
@@ -45,6 +58,11 @@ export default function ContractsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "create" | "edit" | "detail">("list");
+  
+  // New states for dropdowns
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [dealers, setDealers] = useState<Dealer[]>([]);
+  const [loadingDropdowns, setLoadingDropdowns] = useState(false);
 
   const {
     register,
@@ -60,6 +78,58 @@ export default function ContractsPage() {
   useEffect(() => {
     fetchContracts();
   }, [page]);
+
+  // Fetch brands and dealers when opening create/edit modal
+  useEffect(() => {
+    if (viewMode === "create" || viewMode === "edit") {
+      fetchBrandsAndDealers();
+    }
+  }, [viewMode]);
+
+  const fetchBrandsAndDealers = async () => {
+    try {
+      setLoadingDropdowns(true);
+      
+      // Fetch brands
+      try {
+        const brandsRes = await apiClient.get("/brands?page=0&size=100");
+        const brandsData = brandsRes.data;
+        
+        if (brandsData.content && Array.isArray(brandsData.content)) {
+          setBrands(brandsData.content);
+        } else if (Array.isArray(brandsData)) {
+          setBrands(brandsData);
+        } else {
+          setBrands([]);
+        }
+      } catch (error: any) {
+        console.error("Error fetching brands:", error);
+        setBrands([]);
+      }
+      
+      // Fetch dealers
+      try {
+        const dealersRes = await apiClient.get("/dealers/filter?page=0&size=100");
+        const dealersData = dealersRes.data;
+        
+        if (dealersData.content && Array.isArray(dealersData.content)) {
+          setDealers(dealersData.content);
+        } else if (Array.isArray(dealersData)) {
+          setDealers(dealersData);
+        } else {
+          setDealers([]);
+        }
+      } catch (error: any) {
+        console.error("Error fetching dealers:", error);
+        setDealers([]);
+      }
+      
+    } catch (error) {
+      console.error("Error fetching dropdowns:", error);
+    } finally {
+      setLoadingDropdowns(false);
+    }
+  };
 
   const fetchContracts = async () => {
     try {
@@ -88,6 +158,8 @@ export default function ContractsPage() {
       startDate: "",
       endDate: "",
       commissionRate: 0,
+      contractTerms: "",
+      salesTarget: 0,
     });
     setSelectedContract(null);
     setViewMode("create");
@@ -100,6 +172,8 @@ export default function ContractsPage() {
       startDate: contract.startDate,
       endDate: contract.endDate,
       commissionRate: contract.commissionRate,
+      contractTerms: "", // Backend không trả về field này trong list
+      salesTarget: 0, // Backend không trả về field này trong list
     });
     setSelectedContract(contract);
     setViewMode("edit");
@@ -127,8 +201,10 @@ export default function ContractsPage() {
   const onSubmit = async (data: ContractForm) => {
     try {
       if (viewMode === "create") {
+        await apiClient.post("/contracts/create", data);
         toast.success("Tạo hợp đồng thành công!");
       } else if (viewMode === "edit" && selectedContract) {
+        await apiClient.put(`/contracts/${selectedContract.id}`, data);
         toast.success("Cập nhật thành công!");
       }
       setViewMode("list");
@@ -271,60 +347,128 @@ export default function ContractsPage() {
                   toast.error("Vui lòng điền đầy đủ thông tin bắt buộc");
                 }
               }}
-              disabled={isSubmitting}
+              disabled={isSubmitting || loadingDropdowns}
             >
               {isSubmitting ? "Đang lưu..." : viewMode === "create" ? "Tạo" : "Cập nhật"}
             </Button>
           </>
         }
       >
+        <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium">Thương hiệu ID *</label>
-            <Input
-              type="number"
-              {...register("brandId", { valueAsNumber: true })}
-              className="mt-1"
-            />
+            <label className="text-sm font-medium">Thương hiệu *</label>
+            {loadingDropdowns ? (
+              <div className="mt-1 text-sm text-muted-foreground">Đang tải...</div>
+            ) : brands.length > 0 ? (
+              <select
+                {...register("brandId", { valueAsNumber: true })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
+                disabled={loadingDropdowns}
+              >
+                <option value={0}>-- Chọn thương hiệu --</option>
+                {brands.map((brand) => (
+                  <option key={brand.id} value={brand.id}>
+                    {brand.brandName} (ID: {brand.id})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                type="number"
+                {...register("brandId", { valueAsNumber: true })}
+                className="mt-1"
+                placeholder="Nhập Brand ID"
+              />
+            )}
             {errors.brandId && (
               <p className="text-sm text-destructive mt-1">{errors.brandId.message}</p>
             )}
           </div>
+
           <div>
-            <label className="text-sm font-medium">Đại lý ID *</label>
-            <Input
-              type="number"
-              {...register("dealerId", { valueAsNumber: true })}
-              className="mt-1"
-            />
+            <label className="text-sm font-medium">Đại lý *</label>
+            {loadingDropdowns ? (
+              <div className="mt-1 text-sm text-muted-foreground">Đang tải...</div>
+            ) : dealers.length > 0 ? (
+              <select
+                {...register("dealerId", { valueAsNumber: true })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
+                disabled={loadingDropdowns}
+              >
+                <option value={0}>-- Chọn đại lý --</option>
+                {dealers.map((dealer) => (
+                  <option key={dealer.id} value={dealer.id}>
+                    {dealer.dealerName} (ID: {dealer.id})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                type="number"
+                {...register("dealerId", { valueAsNumber: true })}
+                className="mt-1"
+                placeholder="Nhập Dealer ID"
+              />
+            )}
             {errors.dealerId && (
               <p className="text-sm text-destructive mt-1">{errors.dealerId.message}</p>
             )}
           </div>
-              <div>
-                <label className="text-sm font-medium">Ngày bắt đầu *</label>
-                <Input type="date" {...register("startDate")} className="mt-1" />
-                {errors.startDate && (
-                  <p className="text-sm text-destructive mt-1">{errors.startDate.message}</p>
-                )}
-              </div>
-              <div>
-                <label className="text-sm font-medium">Ngày kết thúc *</label>
-                <Input type="date" {...register("endDate")} className="mt-1" />
-                {errors.endDate && (
-                  <p className="text-sm text-destructive mt-1">{errors.endDate.message}</p>
-                )}
-              </div>
-              <div>
-                <label className="text-sm font-medium">Tỷ lệ hoa hồng (%) *</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  {...register("commissionRate", { valueAsNumber: true })}
-                  className="mt-1"
-                />
-                {errors.commissionRate && (
-                  <p className="text-sm text-destructive mt-1">{errors.commissionRate.message}</p>
-                )}
+
+          <div>
+            <label className="text-sm font-medium">Ngày bắt đầu *</label>
+            <Input type="date" {...register("startDate")} className="mt-1" />
+            {errors.startDate && (
+              <p className="text-sm text-destructive mt-1">{errors.startDate.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Ngày kết thúc *</label>
+            <Input type="date" {...register("endDate")} className="mt-1" />
+            {errors.endDate && (
+              <p className="text-sm text-destructive mt-1">{errors.endDate.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Tỷ lệ hoa hồng (%) *</label>
+            <Input
+              type="number"
+              step="0.01"
+              {...register("commissionRate", { valueAsNumber: true })}
+              className="mt-1"
+            />
+            {errors.commissionRate && (
+              <p className="text-sm text-destructive mt-1">{errors.commissionRate.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Điều khoản hợp đồng *</label>
+            <textarea
+              {...register("contractTerms")}
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring min-h-[100px]"
+              placeholder="Nhập điều khoản hợp đồng..."
+            />
+            {errors.contractTerms && (
+              <p className="text-sm text-destructive mt-1">{errors.contractTerms.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Mục tiêu doanh số (VNĐ) *</label>
+            <Input
+              type="number"
+              step="1"
+              {...register("salesTarget", { valueAsNumber: true })}
+              className="mt-1"
+              placeholder="10000000000"
+            />
+            {errors.salesTarget && (
+              <p className="text-sm text-destructive mt-1">{errors.salesTarget.message}</p>
+            )}
+          </div>
         </div>
       </EntityModal>
 
@@ -347,7 +491,7 @@ export default function ContractsPage() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Số hợp đồng</label>
-              <p className="text-lg font-semibold">{selectedContract.contractNumber}</p>
+              <p className="text-lg font-semibold">{selectedContract.brandId}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Trạng thái</label>
