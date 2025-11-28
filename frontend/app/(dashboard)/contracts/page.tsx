@@ -10,59 +10,32 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import toast from "react-hot-toast";
-import { formatDate, getStatusColor } from "@/lib/utils";
-import type { PaginatedResponse } from "@/types";
-import { Search, Plus, Eye, Edit, Trash2, RefreshCw } from "lucide-react";
+import type { Inventory, PaginatedResponse, Product } from "@/types";
+import { Search, Plus, Eye, Edit, Trash2, RefreshCw, AlertTriangle, Package } from "lucide-react";
 
-interface Contract {
-  id: number;
-  contractNumber: string;
-  brandId: number;
-  brandName: string;
-  dealerId: number;
-  dealerName: string;
-  startDate: string;
-  endDate: string;
-  status: string;
-  commissionRate: number;
-  createdAt: string;
-}
-
-interface Brand {
-  brandName: ReactNode;
-  id: number;
-  name: string;
-}
-
-interface Dealer {
-  id: number;
-  dealerName: string;
-}
-
-const contractSchema = z.object({
-  brandId: z.number().min(1, "Vui lòng chọn thương hiệu"),
-  dealerId: z.number().min(1, "Vui lòng chọn đại lý"),
-  startDate: z.string().min(1, "Vui lòng chọn ngày bắt đầu"),
-  endDate: z.string().min(1, "Vui lòng chọn ngày kết thúc"),
-  commissionRate: z.number().min(0, "Tỷ lệ hoa hồng phải >= 0").max(100, "Tỷ lệ hoa hồng phải <= 100"),
-  contractTerms: z.string().min(1, "Vui lòng nhập điều khoản hợp đồng"),
-  salesTarget: z.number().min(0, "Mục tiêu doanh số phải >= 0"),
+const inventorySchema = z.object({
+  productId: z.number().min(1, "Vui lòng chọn sản phẩm"),
+  dealerId: z.number().nullable().optional(),
+  totalQuantity: z.number().min(0),
+  reservedQuantity: z.number().min(0),
+  availableQuantity: z.number().min(0),
+  inTransitQuantity: z.number().min(0),
+  location: z.string().optional(),
 });
 
-type ContractForm = z.infer<typeof contractSchema>;
+type InventoryForm = z.infer<typeof inventorySchema>;
 
-export default function ContractsPage() {
-  const [contracts, setContracts] = useState<Contract[]>([]);
+export default function InventoryPage() {
+  const [inventory, setInventory] = useState<Inventory[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingDropdowns, setLoadingDropdowns] = useState(false);
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [selectedInventory, setSelectedInventory] = useState<Inventory | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "create" | "edit" | "detail">("list");
-  
-  // New states for dropdowns
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [dealers, setDealers] = useState<Dealer[]>([]);
-  const [loadingDropdowns, setLoadingDropdowns] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const {
     register,
@@ -71,151 +44,141 @@ export default function ContractsPage() {
     trigger,
     getValues,
     formState: { errors, isSubmitting },
-  } = useForm<ContractForm>({
-    resolver: zodResolver(contractSchema),
+  } = useForm<InventoryForm>({
+    resolver: zodResolver(inventorySchema),
   });
 
   useEffect(() => {
-    fetchContracts();
-  }, [page]);
+    fetchInventory();
+  }, [page, search, refreshTrigger]);
 
-  // Fetch brands and dealers when opening create/edit modal
+  // Fetch products when opening create/edit modal
   useEffect(() => {
     if (viewMode === "create" || viewMode === "edit") {
-      fetchBrandsAndDealers();
+      fetchProducts();
     }
   }, [viewMode]);
 
-  const fetchBrandsAndDealers = async () => {
+  const fetchProducts = async () => {
     try {
       setLoadingDropdowns(true);
+      const response = await apiClient.get<PaginatedResponse<Product>>("/products?page=0&size=1000");
+      const productsData = response.data;
       
-      // Fetch brands
-      try {
-        const brandsRes = await apiClient.get("/brands?page=0&size=100");
-        const brandsData = brandsRes.data;
-        
-        if (brandsData.content && Array.isArray(brandsData.content)) {
-          setBrands(brandsData.content);
-        } else if (Array.isArray(brandsData)) {
-          setBrands(brandsData);
-        } else {
-          setBrands([]);
-        }
-      } catch (error: any) {
-        console.error("Error fetching brands:", error);
-        setBrands([]);
+      if (productsData.content && Array.isArray(productsData.content)) {
+        setProducts(productsData.content);
+      } else if (Array.isArray(productsData)) {
+        setProducts(productsData);
+      } else {
+        setProducts([]);
       }
-      
-      // Fetch dealers
-      try {
-        const dealersRes = await apiClient.get("/dealers/filter?page=0&size=100");
-        const dealersData = dealersRes.data;
-        
-        if (dealersData.content && Array.isArray(dealersData.content)) {
-          setDealers(dealersData.content);
-        } else if (Array.isArray(dealersData)) {
-          setDealers(dealersData);
-        } else {
-          setDealers([]);
-        }
-      } catch (error: any) {
-        console.error("Error fetching dealers:", error);
-        setDealers([]);
-      }
-      
-    } catch (error) {
-      console.error("Error fetching dropdowns:", error);
+    } catch (error: any) {
+      console.error("Error fetching products:", error);
+      toast.error("Không thể tải danh sách sản phẩm");
+      setProducts([]);
     } finally {
       setLoadingDropdowns(false);
     }
   };
 
-  const fetchContracts = async () => {
+  const fetchInventory = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
         page: page.toString(),
         size: "20",
       });
-      const response = await apiClient.get<PaginatedResponse<Contract>>(
-        `/contracts?${params.toString()}`
+      if (search) {
+        params.append("searchKeyword", search);
+      }
+      const response = await apiClient.get<PaginatedResponse<Inventory>>(
+        `/inventory?${params.toString()}`
       );
-      setContracts(response.data.content);
+      setInventory(response.data.content);
       setTotalPages(response.data.totalPages);
-    } catch (error) {
-      console.error("Error fetching contracts:", error);
-      toast.error("Không thể tải danh sách hợp đồng");
+    } catch (error: any) {
+      console.error("Error fetching inventory:", error);
+      toast.error(error.response?.data?.message || "Không thể tải danh sách tồn kho");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleRefresh = () => {
+    setSearch("");
+    setPage(0);
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   const handleCreate = () => {
     reset({
-      brandId: 0,
-      dealerId: 0,
-      startDate: "",
-      endDate: "",
-      commissionRate: 0,
-      contractTerms: "",
-      salesTarget: 0,
+      productId: 0,
+      dealerId: null,
+      totalQuantity: 0,
+      reservedQuantity: 0,
+      availableQuantity: 0,
+      inTransitQuantity: 0,
+      location: "",
     });
-    setSelectedContract(null);
+    setSelectedInventory(null);
     setViewMode("create");
   };
 
-  const handleEdit = (contract: Contract) => {
+  const handleEdit = (item: Inventory) => {
     reset({
-      brandId: contract.brandId,
-      dealerId: contract.dealerId,
-      startDate: contract.startDate,
-      endDate: contract.endDate,
-      commissionRate: contract.commissionRate,
-      contractTerms: "", // Backend không trả về field này trong list
-      salesTarget: 0, // Backend không trả về field này trong list
+      productId: item.productId,
+      dealerId: item.dealerId || null,
+      totalQuantity: item.totalQuantity,
+      reservedQuantity: item.reservedQuantity,
+      availableQuantity: item.availableQuantity,
+      inTransitQuantity: item.inTransitQuantity,
+      location: "",
     });
-    setSelectedContract(contract);
+    setSelectedInventory(item);
     setViewMode("edit");
   };
 
-  const handleView = (contract: Contract) => {
-    setSelectedContract(contract);
+  const handleView = (item: Inventory) => {
+    setSelectedInventory(item);
     setViewMode("detail");
   };
 
-  const handleDelete = async (contract: Contract) => {
-    if (!confirm(`Bạn có chắc muốn xóa hợp đồng "${contract.contractNumber}"?`)) {
+  const handleDelete = async (item: Inventory) => {
+    if (!confirm(`Bạn có chắc muốn xóa bản ghi tồn kho này?`)) {
       return;
     }
     try {
-      await apiClient.delete(`/contracts/${contract.id}`);
+      await apiClient.delete(`/inventory/${item.inventoryId}`);
       toast.success("Xóa thành công!");
-      fetchContracts();
-    } catch (error) {
-      console.error("Error deleting contract:", error);
-      toast.error("Không thể xóa hợp đồng");
+      fetchInventory();
+    } catch (error: any) {
+      console.error("Error deleting inventory:", error);
+      const errorMessage = error.response?.data?.message || "Không thể xóa bản ghi tồn kho";
+      toast.error(errorMessage);
     }
   };
 
-  const onSubmit = async (data: ContractForm) => {
+  const onSubmit = async (data: InventoryForm) => {
     try {
+      // Convert empty dealerId to null
+      const payload = {
+        ...data,
+        dealerId: data.dealerId || null,
+      };
+
       if (viewMode === "create") {
-        await apiClient.post("/contracts/create", data);
-        toast.success("Tạo hợp đồng thành công!");
-      } else if (viewMode === "edit" && selectedContract) {
-        await apiClient.put(`/contracts/${selectedContract.id}`, data);
+        await apiClient.post("/inventory", payload);
+        toast.success("Tạo bản ghi tồn kho thành công!");
+      } else if (viewMode === "edit" && selectedInventory) {
+        await apiClient.put(`/inventory/${selectedInventory.inventoryId}`, payload);
         toast.success("Cập nhật thành công!");
       }
       setViewMode("list");
       reset();
-      fetchContracts();
+      fetchInventory();
     } catch (error: any) {
-      console.error("Error saving contract:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        "Không thể lưu hợp đồng";
+      console.error("Error saving inventory:", error);
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || "Không thể lưu tồn kho";
       toast.error(errorMessage);
     }
   };
@@ -224,11 +187,11 @@ export default function ContractsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Hợp đồng</h1>
-          <p className="text-muted-foreground">Quản lý hợp đồng đại lý</p>
+          <h1 className="text-3xl font-bold">Kho hàng</h1>
+          <p className="text-muted-foreground">Quản lý tồn kho sản phẩm</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchContracts} disabled={loading}>
+          <Button variant="outline" onClick={handleRefresh} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Làm mới
           </Button>
@@ -239,60 +202,109 @@ export default function ContractsPage() {
         </div>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Tìm kiếm</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Tìm kiếm..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(0);
+              }}
+              className="pl-9"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <div className="text-muted-foreground">Đang tải...</div>
         </div>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {contracts.map((contract) => (
-              <Card key={contract.id} className="overflow-hidden">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{contract.contractNumber}</CardTitle>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(contract.status)}`}>
-                      {contract.status}
-                    </span>
-                  </div>
-                  <CardDescription>
-                    {formatDate(contract.startDate)} - {formatDate(contract.endDate)}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Thương hiệu</span>
-                      <span className="font-medium">{contract.brandName}</span>
+          <Card>
+            <CardHeader>
+              <CardTitle>Danh sách tồn kho ({inventory.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {inventory.map((item) => (
+                  <div
+                    key={item.inventoryId}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                          {item.isLowStock ? (
+                            <AlertTriangle className="h-6 w-6 text-yellow-600" />
+                          ) : (
+                            <Package className="h-6 w-6 text-primary" />
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">{item.productName}</h3>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                            {item.dealerName && (
+                              <>
+                                <span>Đại lý: {item.dealerName}</span>
+                                <span>•</span>
+                              </>
+                            )}
+                            <span>Tổng: {item.totalQuantity}</span>
+                            <span>•</span>
+                            <span>Có sẵn: {item.availableQuantity}</span>
+                            <span>•</span>
+                            <span>Đã giữ: {item.reservedQuantity}</span>
+                            {item.isLowStock && (
+                              <>
+                                <span>•</span>
+                                <span className="text-yellow-600 font-medium">Tồn kho thấp</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Đại lý</span>
-                      <span className="font-medium">{contract.dealerName}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Hoa hồng</span>
-                      <span className="font-medium">{contract.commissionRate}%</span>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Tỷ lệ tồn kho</p>
+                        <p className="font-bold text-lg">
+                          {item.stockPercentage?.toFixed(1) || 0}%
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleView(item)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleEdit(item)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(item)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-2 flex-wrap">
-                    <Button variant="outline" size="sm" onClick={() => handleView(contract)}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(contract)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(contract)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                ))}
+                {inventory.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Không có dữ liệu
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2">
@@ -320,7 +332,7 @@ export default function ContractsPage() {
 
       {/* Create/Edit Modal */}
       <EntityModal
-        title={viewMode === "create" ? "Thêm hợp đồng mới" : "Sửa hợp đồng"}
+        title={viewMode === "create" ? "Thêm bản ghi tồn kho" : "Sửa tồn kho"}
         open={viewMode === "create" || viewMode === "edit"}
         onClose={() => {
           setViewMode("list");
@@ -356,167 +368,171 @@ export default function ContractsPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium">Thương hiệu *</label>
+            <label className="text-sm font-medium">Sản phẩm *</label>
             {loadingDropdowns ? (
               <div className="mt-1 text-sm text-muted-foreground">Đang tải...</div>
-            ) : brands.length > 0 ? (
+            ) : products.length > 0 ? (
               <select
-                {...register("brandId", { valueAsNumber: true })}
+                {...register("productId", { valueAsNumber: true })}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
                 disabled={loadingDropdowns}
               >
-                <option value={0}>-- Chọn thương hiệu --</option>
-                {brands.map((brand) => (
-                  <option key={brand.id} value={brand.id}>
-                    {brand.brandName} (ID: {brand.id})
+                <option value={0}>-- Chọn sản phẩm --</option>
+                {products.map((product) => (
+                  <option key={product.productId} value={product.productId}>
+                    {product.productName}
                   </option>
                 ))}
               </select>
             ) : (
               <Input
                 type="number"
-                {...register("brandId", { valueAsNumber: true })}
+                {...register("productId", { valueAsNumber: true })}
                 className="mt-1"
-                placeholder="Nhập Brand ID"
+                placeholder="Nhập Product ID"
               />
             )}
-            {errors.brandId && (
-              <p className="text-sm text-destructive mt-1">{errors.brandId.message}</p>
+            {errors.productId && (
+              <p className="text-sm text-destructive mt-1">{errors.productId.message}</p>
             )}
           </div>
 
           <div>
-            <label className="text-sm font-medium">Đại lý *</label>
-            {loadingDropdowns ? (
-              <div className="mt-1 text-sm text-muted-foreground">Đang tải...</div>
-            ) : dealers.length > 0 ? (
-              <select
-                {...register("dealerId", { valueAsNumber: true })}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
-                disabled={loadingDropdowns}
-              >
-                <option value={0}>-- Chọn đại lý --</option>
-                {dealers.map((dealer) => (
-                  <option key={dealer.id} value={dealer.id}>
-                    {dealer.dealerName} (ID: {dealer.id})
-                  </option>
-                ))}
-              </select>
-            ) : (
+            <label className="text-sm font-medium">Dealer ID (để trống = kho hãng)</label>
+            <Input
+              type="number"
+              {...register("dealerId", { 
+                setValueAs: (v) => v === "" || v === null ? null : parseInt(v)
+              })}
+              className="mt-1"
+              placeholder="Để trống nếu là kho hãng"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Tổng số lượng *</label>
               <Input
                 type="number"
-                {...register("dealerId", { valueAsNumber: true })}
+                {...register("totalQuantity", { 
+                  valueAsNumber: true,
+                  setValueAs: (v) => v === "" ? 0 : parseInt(v)
+                })}
                 className="mt-1"
-                placeholder="Nhập Dealer ID"
               />
-            )}
-            {errors.dealerId && (
-              <p className="text-sm text-destructive mt-1">{errors.dealerId.message}</p>
-            )}
+            </div>
+            <div>
+              <label className="text-sm font-medium">Có sẵn *</label>
+              <Input
+                type="number"
+                {...register("availableQuantity", { 
+                  valueAsNumber: true,
+                  setValueAs: (v) => v === "" ? 0 : parseInt(v)
+                })}
+                className="mt-1"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Đã giữ *</label>
+              <Input
+                type="number"
+                {...register("reservedQuantity", { 
+                  valueAsNumber: true,
+                  setValueAs: (v) => v === "" ? 0 : parseInt(v)
+                })}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Đang vận chuyển *</label>
+              <Input
+                type="number"
+                {...register("inTransitQuantity", { 
+                  valueAsNumber: true,
+                  setValueAs: (v) => v === "" ? 0 : parseInt(v)
+                })}
+                className="mt-1"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="text-sm font-medium">Ngày bắt đầu *</label>
-            <Input type="date" {...register("startDate")} className="mt-1" />
-            {errors.startDate && (
-              <p className="text-sm text-destructive mt-1">{errors.startDate.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Ngày kết thúc *</label>
-            <Input type="date" {...register("endDate")} className="mt-1" />
-            {errors.endDate && (
-              <p className="text-sm text-destructive mt-1">{errors.endDate.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Tỷ lệ hoa hồng (%) *</label>
-            <Input
-              type="number"
-              step="0.01"
-              {...register("commissionRate", { valueAsNumber: true })}
-              className="mt-1"
-            />
-            {errors.commissionRate && (
-              <p className="text-sm text-destructive mt-1">{errors.commissionRate.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Điều khoản hợp đồng *</label>
-            <textarea
-              {...register("contractTerms")}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring min-h-[100px]"
-              placeholder="Nhập điều khoản hợp đồng..."
-            />
-            {errors.contractTerms && (
-              <p className="text-sm text-destructive mt-1">{errors.contractTerms.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Mục tiêu doanh số (VNĐ) *</label>
-            <Input
-              type="number"
-              step="1"
-              {...register("salesTarget", { valueAsNumber: true })}
-              className="mt-1"
-              placeholder="10000000000"
-            />
-            {errors.salesTarget && (
-              <p className="text-sm text-destructive mt-1">{errors.salesTarget.message}</p>
-            )}
+            <label className="text-sm font-medium">Vị trí kho</label>
+            <Input {...register("location")} className="mt-1" placeholder="VD: Khu A, Kệ B1" />
           </div>
         </div>
       </EntityModal>
 
       {/* Detail Modal */}
       <EntityModal
-        title="Chi tiết hợp đồng"
-        open={viewMode === "detail" && selectedContract !== null}
+        title="Chi tiết tồn kho"
+        open={viewMode === "detail" && selectedInventory !== null}
         onClose={() => {
           setViewMode("list");
-          setSelectedContract(null);
+          setSelectedInventory(null);
         }}
         footer={
-          <Button onClick={() => selectedContract && handleEdit(selectedContract)}>
-            <Edit className="mr-2 h-4 w-4" />
-            Sửa
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => selectedInventory && handleEdit(selectedInventory)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Sửa
+            </Button>
+          </div>
         }
       >
-        {selectedContract && (
+        {selectedInventory && (
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-muted-foreground">Số hợp đồng</label>
-              <p className="text-lg font-semibold">{selectedContract.brandId}</p>
+              <label className="text-sm font-medium text-muted-foreground">Sản phẩm</label>
+              <p className="text-lg font-semibold">{selectedInventory.productName}</p>
+            </div>
+            {selectedInventory.dealerName && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Đại lý</label>
+                <p>{selectedInventory.dealerName}</p>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Tổng số lượng</label>
+                <p className="text-2xl font-bold">{selectedInventory.totalQuantity}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Có sẵn</label>
+                <p className="text-2xl font-bold text-green-600">
+                  {selectedInventory.availableQuantity}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Đã giữ</label>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {selectedInventory.reservedQuantity}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Đang vận chuyển</label>
+                <p className="text-2xl font-bold text-blue-600">
+                  {selectedInventory.inTransitQuantity}
+                </p>
+              </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-muted-foreground">Trạng thái</label>
-              <p>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(selectedContract.status)}`}>
-                  {selectedContract.status}
-                </span>
+              <label className="text-sm font-medium text-muted-foreground">Tỷ lệ tồn kho</label>
+              <p className="text-2xl font-bold">
+                {selectedInventory.stockPercentage?.toFixed(1) || 0}%
               </p>
             </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Thương hiệu</label>
-              <p>{selectedContract.brandName}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Đại lý</label>
-              <p>{selectedContract.dealerName}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Thời gian</label>
-              <p>{formatDate(selectedContract.startDate)} - {formatDate(selectedContract.endDate)}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Tỷ lệ hoa hồng</label>
-              <p>{selectedContract.commissionRate}%</p>
-            </div>
+            {selectedInventory.isLowStock && (
+              <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                  <p className="text-sm font-medium text-yellow-800">Cảnh báo: Tồn kho thấp</p>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </EntityModal>

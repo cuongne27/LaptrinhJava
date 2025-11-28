@@ -10,16 +10,34 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import toast from "react-hot-toast";
-import type { Inventory, PaginatedResponse } from "@/types";
+import type { Inventory, PaginatedResponse, Product, Dealer } from "@/types";
 import { Search, Plus, Eye, Edit, Trash2, RefreshCw, AlertTriangle, Package } from "lucide-react";
 
 const inventorySchema = z.object({
-  productId: z.number().min(1, "Vui lòng chọn sản phẩm"),
-  dealerId: z.number().nullable().optional(),
-  totalQuantity: z.number().min(0),
-  reservedQuantity: z.number().min(0),
-  availableQuantity: z.number().min(0),
-  inTransitQuantity: z.number().min(0),
+  productId: z.preprocess(
+    (val) => (val === "" || val === "0" || val === 0 ? undefined : Number(val)),
+    z.number().min(1, "Vui lòng chọn sản phẩm")
+  ),
+  dealerId: z.preprocess(
+    (val) => (val === "" || val === "0" || val === 0 || val === null ? null : Number(val)),
+    z.number().nullable().optional()
+  ),
+  totalQuantity: z.preprocess(
+    (val) => (val === "" ? 0 : Number(val)),
+    z.number().min(0)
+  ),
+  reservedQuantity: z.preprocess(
+    (val) => (val === "" ? 0 : Number(val)),
+    z.number().min(0)
+  ),
+  availableQuantity: z.preprocess(
+    (val) => (val === "" ? 0 : Number(val)),
+    z.number().min(0)
+  ),
+  inTransitQuantity: z.preprocess(
+    (val) => (val === "" ? 0 : Number(val)),
+    z.number().min(0)
+  ),
   location: z.string().optional(),
 });
 
@@ -27,7 +45,10 @@ type InventoryForm = z.infer<typeof inventorySchema>;
 
 export default function InventoryPage() {
   const [inventory, setInventory] = useState<Inventory[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [dealers, setDealers] = useState<Dealer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingDropdowns, setLoadingDropdowns] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -39,7 +60,8 @@ export default function InventoryPage() {
     register,
     handleSubmit,
     reset,
-    setValue,
+    trigger,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<InventoryForm>({
     resolver: zodResolver(inventorySchema),
@@ -48,6 +70,67 @@ export default function InventoryPage() {
   useEffect(() => {
     fetchInventory();
   }, [page, search, refreshTrigger]);
+
+  // Fetch products and dealers when opening create/edit modal
+  useEffect(() => {
+    if (viewMode === "create" || viewMode === "edit") {
+      fetchProductsAndDealers();
+    }
+  }, [viewMode]);
+
+  const fetchProductsAndDealers = async () => {
+    try {
+      setLoadingDropdowns(true);
+      
+      // Fetch products
+      try {
+        const response = await apiClient.get<PaginatedResponse<Product>>("/products?page=0&size=1000");
+        console.log("Products API response:", response.data);
+        const productsData = response.data;
+        
+        if (productsData.content && Array.isArray(productsData.content)) {
+          console.log("Setting products from content:", productsData.content);
+          setProducts(productsData.content);
+        } else if (Array.isArray(productsData)) {
+          console.log("Setting products from array:", productsData);
+          setProducts(productsData);
+        } else {
+          console.log("No valid products data");
+          setProducts([]);
+        }
+      } catch (error: any) {
+        console.error("Error fetching products:", error);
+        setProducts([]);
+      }
+
+      // Fetch dealers
+      try {
+        const dealersRes = await apiClient.get("/dealers/filter?page=0&size=100");
+        console.log("Dealers API response:", dealersRes.data);
+        const dealersData = dealersRes.data;
+        
+        if (dealersData.content && Array.isArray(dealersData.content)) {
+          console.log("Setting dealers from content:", dealersData.content);
+          setDealers(dealersData.content);
+        } else if (Array.isArray(dealersData)) {
+          console.log("Setting dealers from array:", dealersData);
+          setDealers(dealersData);
+        } else {
+          console.log("No valid dealers data");
+          setDealers([]);
+        }
+      } catch (error: any) {
+        console.error("Error fetching dealers:", error);
+        setDealers([]);
+      }
+
+    } catch (error) {
+      console.error("Error fetching dropdowns:", error);
+      toast.error("Không thể tải danh sách sản phẩm và đại lý");
+    } finally {
+      setLoadingDropdowns(false);
+    }
+  };
 
   const fetchInventory = async () => {
     try {
@@ -79,17 +162,20 @@ export default function InventoryPage() {
   };
 
   const handleCreate = () => {
-    reset({
-      productId: 0,
-      dealerId: null,
-      totalQuantity: 0,
-      reservedQuantity: 0,
-      availableQuantity: 0,
-      inTransitQuantity: 0,
-      location: "",
-    });
     setSelectedInventory(null);
     setViewMode("create");
+    // Reset form after modal opens
+    setTimeout(() => {
+      reset({
+        productId: "" as any,
+        dealerId: "" as any,
+        totalQuantity: 0,
+        reservedQuantity: 0,
+        availableQuantity: 0,
+        inTransitQuantity: 0,
+        location: "",
+      });
+    }, 100);
   };
 
   const handleEdit = (item: Inventory) => {
@@ -128,11 +214,18 @@ export default function InventoryPage() {
 
   const onSubmit = async (data: InventoryForm) => {
     try {
-      // Convert empty dealerId to null
+      // Ensure all values are properly converted
       const payload = {
-        ...data,
-        dealerId: data.dealerId || null,
+        productId: data.productId ? Number(data.productId) : null,
+        dealerId: data.dealerId ? Number(data.dealerId) : null,
+        totalQuantity: Number(data.totalQuantity) || 0,
+        reservedQuantity: Number(data.reservedQuantity) || 0,
+        availableQuantity: Number(data.availableQuantity) || 0,
+        inTransitQuantity: Number(data.inTransitQuantity) || 0,
+        location: data.location || "",
       };
+
+      console.log("Payload being sent:", payload);
 
       if (viewMode === "create") {
         await apiClient.post("/inventory", payload);
@@ -317,47 +410,108 @@ export default function InventoryPage() {
             >
               Hủy
             </Button>
-            <Button onClick={handleSubmit(onSubmit)} disabled={isSubmitting}>
+            <Button
+              type="button"
+              onClick={async () => {
+                const isValid = await trigger();
+                console.log("Form validation:", isValid);
+                console.log("Form values:", getValues());
+                console.log("Form errors:", errors);
+                
+                if (isValid) {
+                  onSubmit(getValues());
+                } else {
+                  toast.error("Vui lòng điền đầy đủ thông tin bắt buộc");
+                }
+              }}
+              disabled={isSubmitting || loadingDropdowns}
+            >
               {isSubmitting ? "Đang lưu..." : viewMode === "create" ? "Tạo" : "Cập nhật"}
             </Button>
           </>
         }
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div className="space-y-4">
+          {/* Debug info */}
+          <div className="text-xs text-muted-foreground">
+            Loading: {loadingDropdowns ? "Yes" : "No"} | Products: {products.length} | Dealers: {dealers.length}
+          </div>
+          
           <div>
-            <label className="text-sm font-medium">Product ID *</label>
-            <Input
-              type="number"
-              {...register("productId", { 
-                valueAsNumber: true,
-                setValueAs: (v) => v === "" ? 0 : parseInt(v)
-              })}
-              className="mt-1"
-            />
+            <label className="text-sm font-medium">Sản phẩm *</label>
+            {loadingDropdowns ? (
+              <div className="mt-1 text-sm text-muted-foreground">Đang tải...</div>
+            ) : products.length > 0 ? (
+              <>
+                <select
+                  {...register("productId")}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
+                  disabled={loadingDropdowns}
+                >
+                  <option value="">-- Chọn sản phẩm --</option>
+                  {products.filter(p => p.id).map((product) => (
+                    <option key={product.id} value={String(product.id)}>
+                      {product.productName}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">Có {products.length} sản phẩm</p>
+              </>
+            ) : (
+              <>
+                <Input
+                  type="number"
+                  {...register("productId")}
+                  className="mt-1"
+                  placeholder="Nhập Product ID"
+                />
+                <p className="text-xs text-destructive mt-1">Không tải được danh sách sản phẩm</p>
+              </>
+            )}
             {errors.productId && (
               <p className="text-sm text-destructive mt-1">{errors.productId.message}</p>
             )}
           </div>
+
           <div>
-            <label className="text-sm font-medium">Dealer ID (để trống = kho hãng)</label>
-            <Input
-              type="number"
-              {...register("dealerId", { 
-                setValueAs: (v) => v === "" || v === null ? null : parseInt(v)
-              })}
-              className="mt-1"
-              placeholder="Để trống nếu là kho hãng"
-            />
+            <label className="text-sm font-medium">Đại lý (để trống = kho hãng)</label>
+            {loadingDropdowns ? (
+              <div className="mt-1 text-sm text-muted-foreground">Đang tải...</div>
+            ) : dealers.length > 0 ? (
+              <>
+                <select
+                  {...register("dealerId")}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-ring"
+                  disabled={loadingDropdowns}
+                >
+                  <option value="">-- Kho hãng (để trống) --</option>
+                  {dealers.filter(d => d.id).map((dealer) => (
+                    <option key={dealer.id} value={String(dealer.id)}>
+                      {dealer.dealerName}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">Có {dealers.length} đại lý</p>
+              </>
+            ) : (
+              <>
+                <Input
+                  type="number"
+                  {...register("dealerId")}
+                  className="mt-1"
+                  placeholder="Để trống nếu là kho hãng"
+                />
+                <p className="text-xs text-destructive mt-1">Không tải được danh sách đại lý</p>
+              </>
+            )}
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">Tổng số lượng *</label>
               <Input
                 type="number"
-                {...register("totalQuantity", { 
-                  valueAsNumber: true,
-                  setValueAs: (v) => v === "" ? 0 : parseInt(v)
-                })}
+                {...register("totalQuantity")}
                 className="mt-1"
               />
             </div>
@@ -365,23 +519,18 @@ export default function InventoryPage() {
               <label className="text-sm font-medium">Có sẵn *</label>
               <Input
                 type="number"
-                {...register("availableQuantity", { 
-                  valueAsNumber: true,
-                  setValueAs: (v) => v === "" ? 0 : parseInt(v)
-                })}
+                {...register("availableQuantity")}
                 className="mt-1"
               />
             </div>
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">Đã giữ *</label>
               <Input
                 type="number"
-                {...register("reservedQuantity", { 
-                  valueAsNumber: true,
-                  setValueAs: (v) => v === "" ? 0 : parseInt(v)
-                })}
+                {...register("reservedQuantity")}
                 className="mt-1"
               />
             </div>
@@ -389,19 +538,17 @@ export default function InventoryPage() {
               <label className="text-sm font-medium">Đang vận chuyển *</label>
               <Input
                 type="number"
-                {...register("inTransitQuantity", { 
-                  valueAsNumber: true,
-                  setValueAs: (v) => v === "" ? 0 : parseInt(v)
-                })}
+                {...register("inTransitQuantity")}
                 className="mt-1"
               />
             </div>
           </div>
+
           <div>
             <label className="text-sm font-medium">Vị trí kho</label>
             <Input {...register("location")} className="mt-1" placeholder="VD: Khu A, Kệ B1" />
           </div>
-        </form>
+        </div>
       </EntityModal>
 
       {/* Detail Modal */}
